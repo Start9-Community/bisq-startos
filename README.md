@@ -37,7 +37,7 @@
 |---------------|-----------------------------------------------------------------------|
 | Image source  | Custom multi-stage Dockerfile (Ubuntu Jammy builder + KasmVNC Debian Bookworm webtop, flattened via `FROM scratch`) |
 | Architectures | x86_64 only                                                          |
-| Entrypoint    | `unshare --pid --fork --mount-proc /init` (s6-overlay requires PID 1 in its own namespace) |
+| Entrypoint    | `/init` launched via SDK `runAsInit: true` so the container gets PID 1 for s6-overlay |
 
 Bisq is a JavaFX desktop application with no web interface. This package runs it inside a browser-accessible Linux desktop (webtop) powered by KasmVNC:
 
@@ -51,13 +51,13 @@ Browser -> KasmVNC (port 3000) -> Openbox -> Bisq (JavaFX)
 |--------|-------------|-----------------------------------------------------------|
 | `main` | `/config`   | Webtop home, Bisq application data, `store.json`         |
 
-- **`store.json`** — StartOS-managed file storing the admin username and password
+- **`store.json`** — StartOS-managed file storing the admin password (username is hardcoded to `bisq`)
 - **`/config/.local/share/Bisq/`** — upstream Bisq data directory (wallet, trades, settings)
 - **`/config/.local/share/Bisq/bisq.properties`** — generated at launch by `startwm.sh`
 
 ## Installation and First-Run Flow
 
-1. On install, `store.json` is seeded with username `bisq` and no password.
+1. On install, `store.json` is seeded empty (no password set) and the username `bisq` is hardcoded in the service.
 2. A **critical task** prompts the user to run the **Set Admin Password** action, which generates a random password and displays the credentials.
 3. The password is passed to KasmVNC via the `PASSWORD` environment variable.
 
@@ -73,7 +73,8 @@ There is no upstream setup wizard to skip — Bisq launches directly.
 
 The `bisq.properties` file is regenerated on every launch by `startwm.sh` with:
 - `useTorForBtc=false` (StartOS handles Tor at the network level)
-- Empty banned node lists
+- `btcNodes=` (empty — let Bisq discover peers)
+- Empty banned node lists (`bannedSeedNodes`, `bannedBtcNodes`, `bannedPriceRelayNodes`)
 
 ## Network Access and Interfaces
 
@@ -104,9 +105,9 @@ On first install, this action is triggered automatically as a critical task.
 
 ## Dependencies
 
-| Dependency       | Required | Version     | Health check | Purpose                    |
-|------------------|----------|-------------|--------------|----------------------------|
-| Bitcoin (`bitcoind`) | Yes  | >= 28.3:5   | `bitcoind`   | Blockchain data            |
+| Dependency           | Required | Health check | Purpose         |
+|----------------------|----------|--------------|-----------------|
+| Bitcoin (`bitcoind`) | Yes      | `bitcoind`   | Blockchain data |
 
 ## Limitations and Differences
 
@@ -134,15 +135,14 @@ See [CONTRIBUTING.md](CONTRIBUTING.md).
 
 ```yaml
 package_id: bisq
-upstream_version: 1.9.22
-image: custom dockerBuild (multi-stage: ubuntu:jammy + baseimage-kasmvnc:debianbookworm, flattened via FROM scratch)
+image: custom dockerBuild (multi-stage: ubuntu + baseimage-kasmvnc, flattened via FROM scratch)
 architectures: [x86_64]
 volumes:
   main: /config
 ports:
   ui: 3000
 dependencies:
-  - bitcoind (running, >= 28.3:5, health check: bitcoind)
+  - bitcoind (running, health check: bitcoind)
 startos_managed_env_vars:
   - CUSTOM_USER
   - PASSWORD
@@ -153,5 +153,5 @@ startos_managed_env_vars:
   - S6_CMD_WAIT_FOR_SERVICES_MAXTIME
   - S6_VERBOSITY
 actions:
-  - setPassword
+  - set-password
 ```

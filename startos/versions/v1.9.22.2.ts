@@ -3,14 +3,14 @@ import { readFile, rm } from 'fs/promises'
 import { storeJson } from '../fileModels/store.json'
 import { getDefaultPassword } from '../utils'
 
-export const v_1_9_22_1 = VersionInfo.of({
-  version: '1.9.22:1',
+export const v_1_9_22_2 = VersionInfo.of({
+  version: '1.9.22:2',
   releaseNotes: {
-    en_US: 'Repackaged for StartOS 0.4.0',
-    es_ES: 'Reempaquetado para StartOS 0.4.0',
-    de_DE: 'Neu verpackt für StartOS 0.4.0',
-    pl_PL: 'Przepakowano dla StartOS 0.4.0',
-    fr_FR: 'Reconditionné pour StartOS 0.4.0',
+    en_US: 'Internal updates (start-sdk 1.2.0)',
+    es_ES: 'Actualizaciones internas (start-sdk 1.2.0)',
+    de_DE: 'Interne Aktualisierungen (start-sdk 1.2.0)',
+    pl_PL: 'Aktualizacje wewnętrzne (start-sdk 1.2.0)',
+    fr_FR: 'Mises à jour internes (start-sdk 1.2.0)',
   },
   migrations: {
     up: async ({ effects }) => {
