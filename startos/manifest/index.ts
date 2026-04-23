@@ -20,7 +20,7 @@ export const manifest = setupManifest({
   },
   dependencies: {
     bitcoind: {
-      description: 'Bisq requires a Bitcoin Core full node for blockchain data',
+      description: 'Bisq requires a Bitcoin full node for blockchain data',
       optional: false,
       metadata: {
         title: 'Bitcoin',
