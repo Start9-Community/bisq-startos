@@ -1,8 +1,8 @@
 # Stage 1: Install Bisq in Ubuntu where the .deb works
 FROM ubuntu:jammy AS bisq-builder
 
-ARG BISQ_VERSION=1.10.0
-ARG BISQ_PGP_KEY=B8A5D214ADFAA387A14C8BCF02AA2BAE387C8307
+ARG BISQ_VERSION=1.10.1
+ARG BISQ_PGP_KEY=B493319106CC3D1F252E19CBF806F422E222AA02
 
 RUN apt-get update && \
     apt-get install -y wget gnupg xdg-utils && \
