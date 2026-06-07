@@ -61,7 +61,8 @@ Browser -> KasmVNC (port 3000) -> Openbox -> Bisq (JavaFX)
 2. A **critical task** prompts the user to run the **Set Admin Password** action, which generates a random password and displays the credentials.
 3. The password is passed to KasmVNC via the `PASSWORD` environment variable.
 
-There is no upstream setup wizard to skip — Bisq launches directly.
+Bisq launches directly into the desktop. Any upstream wallet/setup prompts run
+inside the Bisq UI after the desktop opens.
 
 ## Configuration Management
 
