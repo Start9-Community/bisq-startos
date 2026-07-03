@@ -4,13 +4,13 @@ import { storeJson } from '../fileModels/store.json'
 import { getDefaultPassword } from '../utils'
 
 export const current = VersionInfo.of({
-  version: '1.10.3:0',
+  version: '1.10.3:1',
   releaseNotes: {
-    en_US: 'Bumps Bisq → 1.10.3.',
-    es_ES: 'Actualiza Bisq → 1.10.3.',
-    de_DE: 'Aktualisiert Bisq → 1.10.3.',
-    pl_PL: 'Aktualizuje Bisq → 1.10.3.',
-    fr_FR: 'Passe Bisq → 1.10.3.',
+    en_US: 'Internal updates (start-sdk 2.0.x)',
+    es_ES: 'Actualizaciones internas (start-sdk 2.0.x)',
+    de_DE: 'Interne Aktualisierungen (start-sdk 2.0.x)',
+    pl_PL: 'Aktualizacje wewnętrzne (start-sdk 2.0.x)',
+    fr_FR: 'Mises à jour internes (start-sdk 2.0.x)',
   },
   migrations: {
     up: async ({ effects }) => {
