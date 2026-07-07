@@ -3,14 +3,14 @@ import { readFile, rm } from 'fs/promises'
 import { storeJson } from '../fileModels/store.json'
 import { getDefaultPassword } from '../utils'
 
-export const v_1_10_2 = VersionInfo.of({
-  version: '1.10.2:0',
+export const current = VersionInfo.of({
+  version: '1.10.3:0',
   releaseNotes: {
-    en_US: 'Bumps Bisq → 1.10.2.',
-    es_ES: 'Actualiza Bisq → 1.10.2.',
-    de_DE: 'Aktualisiert Bisq → 1.10.2.',
-    pl_PL: 'Aktualizuje Bisq → 1.10.2.',
-    fr_FR: 'Passe Bisq → 1.10.2.',
+    en_US: 'Bumps Bisq → 1.10.3.',
+    es_ES: 'Actualiza Bisq → 1.10.3.',
+    de_DE: 'Aktualisiert Bisq → 1.10.3.',
+    pl_PL: 'Aktualizuje Bisq → 1.10.3.',
+    fr_FR: 'Passe Bisq → 1.10.3.',
   },
   migrations: {
     up: async ({ effects }) => {
