@@ -3,7 +3,7 @@ import { readFile, rm } from 'fs/promises'
 import { storeJson } from '../fileModels/store.json'
 import { getDefaultPassword } from '../utils'
 
-export const v_1_10_3 = VersionInfo.of({
+export const current = VersionInfo.of({
   version: '1.10.3:0',
   releaseNotes: {
     en_US: 'Bumps Bisq → 1.10.3.',
