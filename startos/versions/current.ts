@@ -1,36 +1,13 @@
-import { IMPOSSIBLE, VersionInfo, YAML } from '@start9labs/start-sdk'
-import { readFile, rm } from 'fs/promises'
-import { storeJson } from '../fileModels/store.json'
-import { getDefaultPassword } from '../utils'
+import { VersionInfo } from '@start9labs/start-sdk'
 
 export const current = VersionInfo.of({
-  version: '1.10.3:1',
+  version: '1.10.3:2',
   releaseNotes: {
-    en_US: 'Internal updates (start-sdk 2.0.x)',
-    es_ES: 'Actualizaciones internas (start-sdk 2.0.x)',
-    de_DE: 'Interne Aktualisierungen (start-sdk 2.0.x)',
-    pl_PL: 'Aktualizacje wewnętrzne (start-sdk 2.0.x)',
-    fr_FR: 'Mises à jour internes (start-sdk 2.0.x)',
+    en_US: 'Internal updates',
+    es_ES: 'Actualizaciones internas',
+    de_DE: 'Interne Aktualisierungen',
+    pl_PL: 'Aktualizacje wewnętrzne',
+    fr_FR: 'Mises à jour internes',
   },
-  migrations: {
-    up: async ({ effects }) => {
-      // Migrate from old 0.3.x format — read old config if present
-      const configYaml: { password?: string } | undefined = await readFile(
-        '/media/startos/volumes/main/start9/config.yaml',
-        'utf-8',
-      ).then(YAML.parse, () => undefined)
-
-      if (configYaml) {
-        // Preserve old password if it existed, otherwise generate new
-        await storeJson.merge(effects, {
-          PASSWORD: configYaml.password || getDefaultPassword(),
-        })
-        // Remove old start9 config directory
-        await rm('/media/startos/volumes/main/start9', {
-          recursive: true,
-        }).catch(console.error)
-      }
-    },
-    down: IMPOSSIBLE,
-  },
+  migrations: {},
 })
