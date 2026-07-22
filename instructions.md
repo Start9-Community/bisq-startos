@@ -14,7 +14,7 @@ Bisq is a JavaFX desktop application. This package runs it inside a browser-acce
 
 ## Getting set up
 
-1. Install **Bitcoin Core** first if you have not already — Bisq requires a Bitcoin full node and will not start without it.
+1. Install **Bitcoin** first if you have not already — Bisq requires a Bitcoin full node and will not start without it.
 2. After install, StartOS posts a critical task **Set your admin password**. Run it and copy the generated `bisq` username and password to a password manager — you'll need them to log into the desktop.
 3. Start the service and open the **Bisq Desktop** interface. Enter the `bisq` username and the password from step 2 at the KasmVNC login prompt.
 4. Bisq's own first-run wizard appears in the desktop. Walk through it to create or restore a wallet. The first connection to the P2P trading network can take several minutes.
