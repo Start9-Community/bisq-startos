@@ -33,11 +33,11 @@
 
 ## Image and Container Runtime
 
-| Property      | Value                                                                 |
-|---------------|-----------------------------------------------------------------------|
+| Property      | Value                                                                                                               |
+| ------------- | ------------------------------------------------------------------------------------------------------------------- |
 | Image source  | Custom multi-stage Dockerfile (Ubuntu Jammy builder + KasmVNC Debian Bookworm webtop, flattened via `FROM scratch`) |
-| Architectures | x86_64 only                                                          |
-| Entrypoint    | `/init` launched via SDK `runAsInit: true` so the container gets PID 1 for s6-overlay |
+| Architectures | x86_64 only                                                                                                         |
+| Entrypoint    | `/init` launched via SDK `runAsInit: true` so the container gets PID 1 for s6-overlay                               |
 
 Bisq is a JavaFX desktop application with no web interface. This package runs it inside a browser-accessible Linux desktop (webtop) powered by KasmVNC:
 
@@ -47,9 +47,9 @@ Browser -> KasmVNC (port 3000) -> Openbox -> Bisq (JavaFX)
 
 ## Volume and Data Layout
 
-| Volume | Mount point | Contents                                                  |
-|--------|-------------|-----------------------------------------------------------|
-| `main` | `/config`   | Webtop home, Bisq application data, `store.json`         |
+| Volume | Mount point | Contents                                         |
+| ------ | ----------- | ------------------------------------------------ |
+| `main` | `/config`   | Webtop home, Bisq application data, `store.json` |
 
 - **`store.json`** — StartOS-managed file storing the admin password (username is hardcoded to `bisq`)
 - **`/config/.local/share/Bisq/`** — upstream Bisq data directory (wallet, trades, settings)
@@ -66,30 +66,31 @@ inside the Bisq UI after the desktop opens.
 
 ## Configuration Management
 
-| StartOS-Managed                        | Upstream-Managed                              |
-|----------------------------------------|-----------------------------------------------|
-| Admin username and password            | All Bisq application settings via its own UI  |
-| KasmVNC webtop settings (port, auth)   | Wallet, trades, offers                        |
-| `bisq.properties` (Tor/network flags)  |                                               |
+| StartOS-Managed                       | Upstream-Managed                             |
+| ------------------------------------- | -------------------------------------------- |
+| Admin username and password           | All Bisq application settings via its own UI |
+| KasmVNC webtop settings (port, auth)  | Wallet, trades, offers                       |
+| `bisq.properties` (Tor/network flags) |                                              |
 
 The `bisq.properties` file is regenerated on every launch by `startwm.sh` with:
+
 - `useTorForBtc=false` (StartOS handles Tor at the network level)
 - `btcNodes=` (empty — let Bisq discover peers)
 - Empty banned node lists (`bannedSeedNodes`, `bannedBtcNodes`, `bannedPriceRelayNodes`)
 
 ## Network Access and Interfaces
 
-| Interface      | Port | Protocol | Purpose                         |
-|----------------|------|----------|---------------------------------|
-| Bisq Desktop   | 3000 | HTTP     | KasmVNC web interface (full Bisq desktop in browser) |
+| Interface    | Port | Protocol | Purpose                                              |
+| ------------ | ---- | -------- | ---------------------------------------------------- |
+| Bisq Desktop | 3000 | HTTP     | KasmVNC web interface (full Bisq desktop in browser) |
 
 Access via LAN (.local), Tor (.onion), or any other address type configured in StartOS. StartOS terminates TLS, so the interface is always available over HTTPS to the user.
 
 ## Actions (StartOS UI)
 
-| Action               | Purpose                                              | Availability | Inputs | Outputs                    |
-|----------------------|------------------------------------------------------|--------------|--------|----------------------------|
-| **Set Admin Password** | Generate a new random password for the webtop interface | Any status   | None   | Username and new password  |
+| Action                 | Purpose                                                 | Availability | Inputs | Outputs                   |
+| ---------------------- | ------------------------------------------------------- | ------------ | ------ | ------------------------- |
+| **Set Admin Password** | Generate a new random password for the webtop interface | Any status   | None   | Username and new password |
 
 On first install, this action is triggered automatically as a critical task.
 
@@ -100,14 +101,14 @@ On first install, this action is triggered automatically as a critical task.
 
 ## Health Checks
 
-| Check         | Method              | Success message           | Error message               |
-|---------------|---------------------|---------------------------|-----------------------------|
-| Bisq Desktop  | Port 3000 listening | "Bisq desktop is ready"   | "Bisq desktop is not ready" |
+| Check        | Method              | Success message         | Error message               |
+| ------------ | ------------------- | ----------------------- | --------------------------- |
+| Bisq Desktop | Port 3000 listening | "Bisq desktop is ready" | "Bisq desktop is not ready" |
 
 ## Dependencies
 
 | Dependency           | Required | Health check | Purpose         |
-|----------------------|----------|--------------|-----------------|
+| -------------------- | -------- | ------------ | --------------- |
 | Bitcoin (`bitcoind`) | Yes      | `bitcoind`   | Blockchain data |
 
 ## Limitations and Differences
@@ -128,7 +129,7 @@ On first install, this action is triggered automatically as a critical task.
 
 ## Contributing
 
-See [CONTRIBUTING.md](CONTRIBUTING.md).
+Build and development workflow follow the StartOS packaging guide: <https://docs.start9.com/packaging>. Keep `README.md`, `instructions.md`, and `AGENTS.md` in sync with any change to user-visible behavior or package structure.
 
 ---
 
