@@ -11,20 +11,30 @@ export const main = sdk.setupMain(async ({ effects }) => {
     throw new Error('No password in store.json')
   }
 
+  const subcontainer = await sdk.SubContainer.eager(
+    effects,
+    { imageId: 'main' },
+    sdk.Mounts.of().mountVolume({
+      volumeId: 'main',
+      subpath: null,
+      mountpoint: '/config',
+      readonly: false,
+    }),
+    'bisq-sub',
+  )
+
+  // StartOS passes DRI devices as root:root. Selkies runs as the unprivileged
+  // webtop user, so make any available render devices accessible to it.
+  await subcontainer.exec([
+    'sh',
+    '-c',
+    'ls /dev/dri/* 2>/dev/null | xargs -r chmod o+rw',
+  ])
+
   return sdk.Daemons.of(effects).addDaemon('primary', {
-    subcontainer: sdk.SubContainer.of(
-      effects,
-      { imageId: 'main' },
-      sdk.Mounts.of().mountVolume({
-        volumeId: 'main',
-        subpath: null,
-        mountpoint: '/config',
-        readonly: false,
-      }),
-      'bisq-sub',
-    ),
+    subcontainer,
     exec: {
-      command: ['/init'],
+      command: sdk.useEntrypoint(),
       runAsInit: true,
       env: {
         PUID: '1000',
@@ -35,6 +45,7 @@ export const main = sdk.setupMain(async ({ effects }) => {
         PASSWORD,
         S6_CMD_WAIT_FOR_SERVICES_MAXTIME: '0',
         S6_VERBOSITY: '1',
+        NO_DECOR: 'true',
       },
     },
     ready: {

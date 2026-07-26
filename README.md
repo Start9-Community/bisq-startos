@@ -35,14 +35,14 @@
 
 | Property      | Value                                                                                                               |
 | ------------- | ------------------------------------------------------------------------------------------------------------------- |
-| Image source  | Custom multi-stage Dockerfile (Ubuntu Jammy builder + KasmVNC Debian Bookworm webtop, flattened via `FROM scratch`) |
+| Image source  | Custom multi-stage Dockerfile (Ubuntu Jammy builder + pinned LinuxServer Selkies Debian Trixie webtop, flattened via `FROM scratch`) |
 | Architectures | x86_64 only                                                                                                         |
-| Entrypoint    | `/init` launched via SDK `runAsInit: true` so the container gets PID 1 for s6-overlay                               |
+| Entrypoint    | Upstream `/init` launched via SDK `useEntrypoint()` and `runAsInit: true` so the container gets PID 1 for s6-overlay |
 
-Bisq is a JavaFX desktop application with no web interface. This package runs it inside a browser-accessible Linux desktop (webtop) powered by KasmVNC:
+Bisq is a JavaFX desktop application with no web interface. This package runs it inside a browser-accessible Linux desktop (webtop) streamed by Selkies:
 
 ```
-Browser -> KasmVNC (port 3000) -> Openbox -> Bisq (JavaFX)
+Browser -> Selkies (port 3000) -> Openbox -> Bisq (JavaFX)
 ```
 
 ## Volume and Data Layout
@@ -51,7 +51,7 @@ Browser -> KasmVNC (port 3000) -> Openbox -> Bisq (JavaFX)
 | ------ | ----------- | ------------------------------------------------ |
 | `main` | `/config`   | Webtop home, Bisq application data, `store.json` |
 
-- **`store.json`** — StartOS-managed file storing the admin password (username is hardcoded to `bisq`)
+- **`store.json`** — StartOS-managed file storing the desktop password (username is hardcoded to `bisq`)
 - **`/config/.local/share/Bisq/`** — upstream Bisq data directory (wallet, trades, settings)
 - **`/config/.local/share/Bisq/bisq.properties`** — generated at launch by `startwm.sh`
 
@@ -59,7 +59,7 @@ Browser -> KasmVNC (port 3000) -> Openbox -> Bisq (JavaFX)
 
 1. On install, `store.json` is seeded empty (no password set) and the username `bisq` is hardcoded in the service.
 2. A **critical task** prompts the user to run the **Set Admin Password** action, which generates a random password and displays the credentials.
-3. The password is passed to KasmVNC via the `PASSWORD` environment variable.
+3. The credentials are passed to Selkies via the `CUSTOM_USER` and `PASSWORD` environment variables.
 
 Bisq launches directly into the desktop. Any upstream wallet/setup prompts run
 inside the Bisq UI after the desktop opens.
@@ -69,7 +69,7 @@ inside the Bisq UI after the desktop opens.
 | StartOS-Managed                       | Upstream-Managed                             |
 | ------------------------------------- | -------------------------------------------- |
 | Admin username and password           | All Bisq application settings via its own UI |
-| KasmVNC webtop settings (port, auth)  | Wallet, trades, offers                       |
+| Selkies webtop settings (port, auth)  | Wallet, trades, offers                       |
 | `bisq.properties` (Tor/network flags) |                                              |
 
 The `bisq.properties` file is regenerated on every launch by `startwm.sh` with:
@@ -82,7 +82,7 @@ The `bisq.properties` file is regenerated on every launch by `startwm.sh` with:
 
 | Interface    | Port | Protocol | Purpose                                              |
 | ------------ | ---- | -------- | ---------------------------------------------------- |
-| Bisq Desktop | 3000 | HTTP     | KasmVNC web interface (full Bisq desktop in browser) |
+| Bisq Desktop | 3000 | HTTP     | Selkies web interface (full Bisq desktop in browser) |
 
 Access via LAN (.local), Tor (.onion), or any other address type configured in StartOS. StartOS terminates TLS, so the interface is always available over HTTPS to the user.
 
@@ -90,7 +90,7 @@ Access via LAN (.local), Tor (.onion), or any other address type configured in S
 
 | Action                 | Purpose                                                 | Availability | Inputs | Outputs                   |
 | ---------------------- | ------------------------------------------------------- | ------------ | ------ | ------------------------- |
-| **Set Admin Password** | Generate a new random password for the webtop interface | Any status   | None   | Username and new password |
+| **Set Admin Password** | Generate a new random password for the Selkies interface | Any status   | None   | Username and new password |
 
 On first install, this action is triggered automatically as a critical task.
 
@@ -114,7 +114,7 @@ On first install, this action is triggered automatically as a critical task.
 ## Limitations and Differences
 
 1. **x86_64 only** — Bisq does not provide official ARM builds.
-2. **No direct desktop access** — Bisq runs inside a KasmVNC webtop, not as a native desktop app.
+2. **No direct desktop access** — Bisq runs inside a Selkies webtop, not as a native desktop app.
 3. **`bisq.properties` is overwritten on every start** — manual edits to this file will not persist.
 4. **Tor for BTC is disabled** — StartOS manages Tor at the network layer; Bisq's built-in Tor is bypassed.
 5. **First launch is slow** — Bisq needs to connect to the P2P trading network and sync, which can take several minutes.
@@ -137,7 +137,7 @@ Build and development workflow follow the StartOS packaging guide: <https://docs
 
 ```yaml
 package_id: bisq
-image: custom dockerBuild (multi-stage: ubuntu + baseimage-kasmvnc, flattened via FROM scratch)
+image: custom dockerBuild (multi-stage: ubuntu + pinned baseimage-selkies, flattened via FROM scratch)
 architectures: [x86_64]
 volumes:
   main: /config
@@ -154,6 +154,7 @@ startos_managed_env_vars:
   - TITLE
   - S6_CMD_WAIT_FOR_SERVICES_MAXTIME
   - S6_VERBOSITY
+  - NO_DECOR
 actions:
   - set-password
 ```

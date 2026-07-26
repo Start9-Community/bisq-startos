@@ -1,7 +1,7 @@
 {
   "name": "bisq-startos",
   "scripts": {
-    "build": "rm -rf ./javascript && ncc build startos/index.ts -o ./javascript",
+    "build": "rm -rf ./javascript && ncc build startos/index.ts -o ./javascript && chmod 755 ./javascript ./javascript/index.js",
     "prettier": "prettier --write startos",
     "check": "tsc --noEmit"
   },

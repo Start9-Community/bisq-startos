@@ -10,8 +10,8 @@ Work this package's `TODO.md` from top to bottom. Keep `README.md` (architecture
 
 ## This repo
 
-- **Package id is `bisq`.** Bisq Desktop is a GUI application, served to the browser over a LinuxServer.io KasmVNC base image (`/init` s6 entrypoint). A single `primary` daemon runs it; the only interface is the `ui` web view (host `ui-multi`). Depends on `bitcoind` (Bitcoin full node) for blockchain data.
+- **Package id is `bisq`.** Bisq Desktop is a GUI application, served to the browser over a LinuxServer.io Selkies base image (`/init` s6 entrypoint). A single `primary` daemon runs it; the only interface is the `ui` web view (host `ui-multi`). Depends on `bitcoind` (Bitcoin full node) for blockchain data.
 
 ## Inspecting a running install
 
-To run a command inside the service's container (read its generated config, grep app logs), use `start-cli package attach bisq -n bisq-sub -- <cmd>`. Select the subcontainer by **name** with `-n` (the name passed to `SubContainer.of` in `main.ts` — here `bisq-sub`) or by image with `-i`. Note: `-s/--subcontainer` matches the internal **Guid**, not the name, so passing a name to `-s` fails with "no matching subcontainers".
+To run a command inside the service's container (read its generated config, grep app logs), use `start-cli package attach bisq -n bisq-sub -- <cmd>`. Select the subcontainer by **name** with `-n` (the name passed to `SubContainer.eager` in `main.ts` — here `bisq-sub`) or by image with `-i`. Note: `-s/--subcontainer` matches the internal **Guid**, not the name, so passing a name to `-s` fails with "no matching subcontainers".

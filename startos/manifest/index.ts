@@ -15,8 +15,10 @@ export const manifest = setupManifest({
     main: {
       source: { dockerBuild: {} },
       arch: ['x86_64'],
+      nvidiaContainer: true,
     },
   },
+  hardwareAcceleration: true,
   dependencies: {
     bitcoind: {
       description: 'Bisq requires a Bitcoin full node for blockchain data',
