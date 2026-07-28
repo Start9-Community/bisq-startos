@@ -1,7 +1,7 @@
 import { storeJson } from './fileModels/store.json'
 import { i18n } from './i18n'
 import { sdk } from './sdk'
-import { uiPort } from './utils'
+import { bitcoindPeerBridge, uiPort } from './utils'
 
 export const main = sdk.setupMain(async ({ effects }) => {
   console.info(i18n('Starting Bisq!'))
@@ -10,6 +10,11 @@ export const main = sdk.setupMain(async ({ effects }) => {
   if (!PASSWORD) {
     throw new Error('No password in store.json')
   }
+
+  // Use Bitcoin Core's whitelisted, bridge-only peer listener. The resolved
+  // address changes only when the binding appears, disappears, or moves, so
+  // .const() heals Bisq without restarting it for ordinary Bitcoin updates.
+  const bitcoindPeer = await bitcoindPeerBridge(effects)
 
   const subcontainer = await sdk.SubContainer.eager(
     effects,
@@ -43,6 +48,7 @@ export const main = sdk.setupMain(async ({ effects }) => {
         TITLE: 'Bisq',
         CUSTOM_USER: 'bisq',
         PASSWORD,
+        ...(bitcoindPeer && { BITCOIND_PEER_ADDR: bitcoindPeer }),
         S6_CMD_WAIT_FOR_SERVICES_MAXTIME: '0',
         S6_VERBOSITY: '1',
         NO_DECOR: 'true',

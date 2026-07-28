@@ -13,11 +13,14 @@ mkdir -p "$(dirname "$BISQ_PROPS")"
 
 cat > "$BISQ_PROPS" << PROPS
 useTorForBtc=false
-btcNodes=
 bannedSeedNodes=
 bannedBtcNodes=
 bannedPriceRelayNodes=
 PROPS
+
+if [[ -n "${BITCOIND_PEER_ADDR:-}" ]]; then
+  printf 'btcNodes=%s\n' "$BITCOIND_PEER_ADDR" >> "$BISQ_PROPS"
+fi
 
 # Kill any leftover Bisq processes
 pkill -f "/opt/bisq" 2>/dev/null

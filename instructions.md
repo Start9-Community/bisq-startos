@@ -10,7 +10,7 @@ Bisq is a JavaFX desktop application. This package runs it inside a browser-acce
 
 - A **Bisq Desktop** interface that streams the Bisq JavaFX application to your browser over Selkies.
 - A single backed-up `main` volume that holds your Bisq wallet, trades, offers, and Selkies settings.
-- The Bisq network profile is regenerated on every start so that Tor is handled at the StartOS network layer and peer discovery is left to Bisq's defaults.
+- The Bisq network profile is regenerated on every start so that Tor is handled at the StartOS network layer and Bitcoin traffic uses your StartOS Bitcoin node's private, trusted peer connection.
 
 ## Getting set up
 
@@ -32,4 +32,4 @@ The **Bisq Desktop** interface is the full Bisq application rendered in your bro
 ## Limitations
 
 - **x86_64 only.** Bisq does not ship official ARM builds.
-- **The Bisq network profile is regenerated on every start.** Manual edits to `bisq.properties` inside the container do not persist; Tor-for-BTC is intentionally disabled because StartOS manages Tor at the network layer.
+- **The Bisq network profile is regenerated on every start.** Manual edits to `bisq.properties` inside the container do not persist; Tor-for-BTC is intentionally disabled because StartOS manages Tor at the network layer, and the Bitcoin peer is set to your local Bitcoin service.

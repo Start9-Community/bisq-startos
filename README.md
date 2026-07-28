@@ -33,11 +33,11 @@
 
 ## Image and Container Runtime
 
-| Property      | Value                                                                                                               |
-| ------------- | ------------------------------------------------------------------------------------------------------------------- |
+| Property      | Value                                                                                                                                |
+| ------------- | ------------------------------------------------------------------------------------------------------------------------------------ |
 | Image source  | Custom multi-stage Dockerfile (Ubuntu Jammy builder + pinned LinuxServer Selkies Debian Trixie webtop, flattened via `FROM scratch`) |
-| Architectures | x86_64 only                                                                                                         |
-| Entrypoint    | Upstream `/init` launched via SDK `useEntrypoint()` and `runAsInit: true` so the container gets PID 1 for s6-overlay |
+| Architectures | x86_64 only                                                                                                                          |
+| Entrypoint    | Upstream `/init` launched via SDK `useEntrypoint()` and `runAsInit: true` so the container gets PID 1 for s6-overlay                 |
 
 Bisq is a JavaFX desktop application with no web interface. This package runs it inside a browser-accessible Linux desktop (webtop) streamed by Selkies:
 
@@ -66,17 +66,23 @@ inside the Bisq UI after the desktop opens.
 
 ## Configuration Management
 
-| StartOS-Managed                       | Upstream-Managed                             |
-| ------------------------------------- | -------------------------------------------- |
-| Admin username and password           | All Bisq application settings via its own UI |
-| Selkies webtop settings (port, auth)  | Wallet, trades, offers                       |
-| `bisq.properties` (Tor/network flags) |                                              |
+| StartOS-Managed                      | Upstream-Managed                             |
+| ------------------------------------ | -------------------------------------------- |
+| Admin username and password          | All Bisq application settings via its own UI |
+| Selkies webtop settings (port, auth) | Wallet, trades, offers                       |
+| `bisq.properties` (Tor/Bitcoin node) |                                              |
 
 The `bisq.properties` file is regenerated on every launch by `startwm.sh` with:
 
 - `useTorForBtc=false` (StartOS handles Tor at the network level)
-- `btcNodes=` (empty — let Bisq discover peers)
+- `btcNodes=<bridge address>` (Bitcoin Core's private, whitelisted `peer-local` listener)
 - Empty banned node lists (`bannedSeedNodes`, `bannedBtcNodes`, `bannedPriceRelayNodes`)
+
+`startos/main.ts` resolves the live bridge address from Bitcoin Core's
+`peer-local` binding and passes it into the container. The address is watched
+reactively: Bisq restarts only if that binding appears, disappears, or changes,
+not when Bitcoin Core receives a routine update. If the dependency is absent,
+the `btcNodes` property is omitted until the binding becomes available.
 
 ## Network Access and Interfaces
 
@@ -88,8 +94,8 @@ Access via LAN (.local), Tor (.onion), or any other address type configured in S
 
 ## Actions (StartOS UI)
 
-| Action                 | Purpose                                                 | Availability | Inputs | Outputs                   |
-| ---------------------- | ------------------------------------------------------- | ------------ | ------ | ------------------------- |
+| Action                 | Purpose                                                  | Availability | Inputs | Outputs                   |
+| ---------------------- | -------------------------------------------------------- | ------------ | ------ | ------------------------- |
 | **Set Admin Password** | Generate a new random password for the Selkies interface | Any status   | None   | Username and new password |
 
 On first install, this action is triggered automatically as a critical task.
@@ -107,17 +113,18 @@ On first install, this action is triggered automatically as a critical task.
 
 ## Dependencies
 
-| Dependency           | Required | Health check | Purpose         |
-| -------------------- | -------- | ------------ | --------------- |
-| Bitcoin (`bitcoind`) | Yes      | `bitcoind`   | Blockchain data |
+| Dependency           | Required | Health check | Purpose                                              |
+| -------------------- | -------- | ------------ | ---------------------------------------------------- |
+| Bitcoin (`bitcoind`) | Yes      | `bitcoind`   | Private, trusted peer connection for blockchain data |
 
 ## Limitations and Differences
 
 1. **x86_64 only** — Bisq does not provide official ARM builds.
 2. **No direct desktop access** — Bisq runs inside a Selkies webtop, not as a native desktop app.
 3. **`bisq.properties` is overwritten on every start** — manual edits to this file will not persist.
-4. **Tor for BTC is disabled** — StartOS manages Tor at the network layer; Bisq's built-in Tor is bypassed.
-5. **First launch is slow** — Bisq needs to connect to the P2P trading network and sync, which can take several minutes.
+4. **Bitcoin traffic uses the local full node** — Bisq connects to Bitcoin Core's bridge-only, whitelisted peer listener instead of discovering public Bitcoin peers.
+5. **Tor for BTC is disabled** — StartOS manages Tor at the network layer; Bisq's built-in Tor is bypassed.
+6. **First launch is slow** — Bisq needs to connect to the P2P trading network and sync, which can take several minutes.
 
 ## What Is Unchanged from Upstream
 
@@ -148,6 +155,7 @@ dependencies:
 startos_managed_env_vars:
   - CUSTOM_USER
   - PASSWORD
+  - BITCOIND_PEER_ADDR
   - PUID
   - PGID
   - TZ
