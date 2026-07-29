@@ -16,7 +16,7 @@ mkdir -p "$(dirname "$bisq_props")"
 
 case "${BITCOIN_CONNECTION_MODE:-local-only}" in
   local-only)
-    if [[ -z "${BITCOIND_PEER_ADDR:-}" ]]; then
+    if [ -z "${BITCOIND_PEER_ADDR:-}" ]; then
       echo 'Local Bitcoin node mode requires BITCOIND_PEER_ADDR' >&2
       exit 1
     fi
@@ -24,7 +24,7 @@ case "${BITCOIN_CONNECTION_MODE:-local-only}" in
     bitcoin_nodes=$BITCOIND_PEER_ADDR
     ;;
   bisq-network)
-    if [[ -z "${BISQ_NETWORK_FALLBACK_NODES:-}" ]]; then
+    if [ -z "${BISQ_NETWORK_FALLBACK_NODES:-}" ]; then
       echo 'Bisq network fallback requires BISQ_NETWORK_FALLBACK_NODES' >&2
       exit 1
     fi
