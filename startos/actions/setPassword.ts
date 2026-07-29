@@ -25,14 +25,16 @@ export const setPassword = sdk.Action.withoutInput(
 
     return {
       version: '1',
-      title: 'Bisq Credentials',
-      message: 'Use these credentials to log into the Bisq desktop interface:',
+      title: i18n('Bisq Credentials'),
+      message: i18n(
+        'Use these credentials to log into the Bisq desktop interface:',
+      ),
       result: {
         type: 'group',
         value: [
           {
             type: 'single',
-            name: 'Username',
+            name: i18n('Username'),
             description: null,
             value: 'bisq',
             masked: false,
@@ -41,7 +43,7 @@ export const setPassword = sdk.Action.withoutInput(
           },
           {
             type: 'single',
-            name: 'Password',
+            name: i18n('Password'),
             description: null,
             value: PASSWORD,
             masked: true,

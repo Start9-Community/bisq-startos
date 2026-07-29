@@ -98,15 +98,11 @@ ENV \
   START_DOCKER=false \
   PULSE_RUNTIME_PATH=/defaults \
   SELKIES_INTERPOSER=/usr/lib/selkies_joystick_interposer.so \
-  NVIDIA_DRIVER_CAPABILITIES=all \
-  DISABLE_ZINK=false \
-  DISABLE_DRI3=false \
   SELKIES_ENCODER="x264enc,jpeg" \
   TITLE=Selkies
 
 # Add local files
-COPY root/ /
-RUN chmod 755 /defaults/startwm.sh /defaults/autostart
+COPY --chmod=755 root/ /
 
 EXPOSE 3000
 VOLUME /config

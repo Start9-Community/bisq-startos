@@ -45,15 +45,20 @@ Bisq is a JavaFX desktop application with no web interface. This package runs it
 Browser -> Selkies (port 3000) -> Openbox -> Bisq (JavaFX)
 ```
 
+Selkies starts Openbox through its upstream D-Bus session wrapper. The
+package-owned `/defaults/autostart` hook launches Bisq inside that session and
+is copied over the persisted Openbox autostart file on every launch so upgrades
+cannot retain an obsolete KasmVNC/Selkies startup file.
+
 ## Volume and Data Layout
 
 | Volume | Mount point | Contents                                         |
 | ------ | ----------- | ------------------------------------------------ |
 | `main` | `/config`   | Webtop home, Bisq application data, `store.json` |
 
-- **`store.json`** — StartOS-managed file storing the desktop password (username is hardcoded to `bisq`)
+- **`store.json`** — StartOS-managed file storing the desktop password and Bitcoin connection mode (username is hardcoded to `bisq`)
 - **`/config/.local/share/Bisq/`** — upstream Bisq data directory (wallet, trades, settings)
-- **`/config/.local/share/Bisq/bisq.properties`** — generated at launch by `startwm.sh`
+- **`/config/.local/share/Bisq/bisq.properties`** — generated at launch by the Selkies autostart hook
 
 ## Installation and First-Run Flow
 
@@ -68,21 +73,30 @@ inside the Bisq UI after the desktop opens.
 
 | StartOS-Managed                      | Upstream-Managed                             |
 | ------------------------------------ | -------------------------------------------- |
-| Admin username and password          | All Bisq application settings via its own UI |
-| Selkies webtop settings (port, auth) | Wallet, trades, offers                       |
-| `bisq.properties` (Tor/Bitcoin node) |                                              |
+| Admin username and password            | All other Bisq application settings via its own UI |
+| Bitcoin connection mode                | Wallet, trades, offers                            |
+| Selkies webtop settings (port, auth)   |                                                   |
+| `bisq.properties` (Tor/Bitcoin peers)  |                                                   |
 
-The `bisq.properties` file is regenerated on every launch by `startwm.sh` with:
+The `bisq.properties` file is regenerated on every launch. The selected mode is:
 
-- `useTorForBtc=false` (StartOS handles Tor at the network level)
-- `btcNodes=<bridge address>` (Bitcoin Core's private, whitelisted `peer-local` listener)
-- Empty banned node lists (`bannedSeedNodes`, `bannedBtcNodes`, `bannedPriceRelayNodes`)
+- **Local node only (default):** `useTorForBtc=false` and
+  `btcNodes=<bridge address>` target Bitcoin's private, whitelisted
+  `peer-local` listener. A startup oneshot waits up to one minute for that
+  listener and fails startup if it remains unreachable.
+- **Bisq network fallback:** `useTorForBtc=true` and `btcNodes=<Bisq-provided
+  peers>` use the remote peer set bundled with the packaged Bisq release over
+  Tor. In this mode Bitcoin is not a required StartOS dependency.
 
-`startos/main.ts` resolves the live bridge address from Bitcoin Core's
-`peer-local` binding and passes it into the container. The address is watched
-reactively: Bisq restarts only if that binding appears, disappears, or changes,
-not when Bitcoin Core receives a routine update. If the dependency is absent,
-the `btcNodes` property is omitted until the binding becomes available.
+`startos/main.ts` resolves the live bridge address from Bitcoin's `peer-local`
+binding only in local-only mode. The address and connection-mode setting are
+watched reactively: Bisq restarts when either changes, but not when Bitcoin
+receives a routine update.
+
+Selkies keeps upload and download enabled so users can move Bisq wallet/history
+exports between machines. Passwordless sudo, terminal binaries, the remote
+command channel, external open helpers, and the unrelated Applications sidebar
+are disabled.
 
 ## Network Access and Interfaces
 
@@ -94,11 +108,13 @@ Access via LAN (.local), Tor (.onion), or any other address type configured in S
 
 ## Actions (StartOS UI)
 
-| Action                 | Purpose                                                  | Availability | Inputs | Outputs                   |
-| ---------------------- | -------------------------------------------------------- | ------------ | ------ | ------------------------- |
-| **Set Admin Password** | Generate a new random password for the Selkies interface | Any status   | None   | Username and new password |
+| Action                           | Purpose                                                         | Availability | Inputs                  | Outputs                   |
+| -------------------------------- | --------------------------------------------------------------- | ------------ | ----------------------- | ------------------------- |
+| **Set Admin Password**           | Generate a new random password for the Selkies interface        | Any status   | None                    | Username and new password |
+| **Configure Bitcoin Connection** | Select local-only mode or the remote Bisq network fallback mode | Any status   | Bitcoin connection mode | None                      |
 
-On first install, this action is triggered automatically as a critical task.
+On first install, **Set Admin Password** is triggered automatically as a
+critical task.
 
 ## Backups and Restore
 
@@ -113,17 +129,21 @@ On first install, this action is triggered automatically as a critical task.
 
 ## Dependencies
 
-| Dependency           | Required | Health check | Purpose                                              |
-| -------------------- | -------- | ------------ | ---------------------------------------------------- |
-| Bitcoin (`bitcoind`) | Yes      | `bitcoind`   | Private, trusted peer connection for blockchain data |
+| Dependency           | Required                       | Health check | Purpose                                              |
+| -------------------- | ------------------------------ | ------------ | ---------------------------------------------------- |
+| Bitcoin (`bitcoind`) | In local-only mode (default)   | `bitcoind`   | Private, trusted peer connection for blockchain data |
+
+When local-only mode is selected, a recurring critical dependency task requires
+Bitcoin's `peerbloomfilters` setting to remain enabled. Switching to fallback
+mode clears that task and removes the dependency warning.
 
 ## Limitations and Differences
 
 1. **x86_64 only** — Bisq does not provide official ARM builds.
 2. **No direct desktop access** — Bisq runs inside a Selkies webtop, not as a native desktop app.
 3. **`bisq.properties` is overwritten on every start** — manual edits to this file will not persist.
-4. **Bitcoin traffic uses the local full node** — Bisq connects to Bitcoin Core's bridge-only, whitelisted peer listener instead of discovering public Bitcoin peers.
-5. **Tor for BTC is disabled** — StartOS manages Tor at the network layer; Bisq's built-in Tor is bypassed.
+4. **Local-only mode fails closed** — Bisq does not silently use remote Bitcoin peers when the local node is missing or unreachable.
+5. **Fallback mode uses remote peers over Tor** — select it explicitly with the Configure Bitcoin Connection action when a local Bitcoin node is not available.
 6. **First launch is slow** — Bisq needs to connect to the P2P trading network and sync, which can take several minutes.
 
 ## What Is Unchanged from Upstream
@@ -151,11 +171,13 @@ volumes:
 ports:
   ui: 3000
 dependencies:
-  - bitcoind (running, health check: bitcoind)
+  - bitcoind (local-only mode; running, health check: bitcoind)
 startos_managed_env_vars:
   - CUSTOM_USER
   - PASSWORD
+  - BITCOIN_CONNECTION_MODE
   - BITCOIND_PEER_ADDR
+  - BISQ_NETWORK_FALLBACK_NODES
   - PUID
   - PGID
   - TZ
@@ -163,6 +185,14 @@ startos_managed_env_vars:
   - S6_CMD_WAIT_FOR_SERVICES_MAXTIME
   - S6_VERBOSITY
   - NO_DECOR
+  - DISABLE_OPEN_TOOLS
+  - DISABLE_SUDO
+  - DISABLE_TERMINALS
+  - SELKIES_COMMAND_ENABLED
+  - SELKIES_UI_SIDEBAR_SHOW_APPS
+  - SELKIES_UI_SIDEBAR_SHOW_FILES
+  - SELKIES_FILE_TRANSFERS
 actions:
   - set-password
+  - configure-bitcoin-connection
 ```

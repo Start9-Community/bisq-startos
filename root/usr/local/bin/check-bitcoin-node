@@ -1,0 +1,21 @@
+#!/usr/bin/env bash
+
+set -eu
+
+if [[ -z "${BITCOIND_PEER_ADDR:-}" ]]; then
+  echo 'BITCOIND_PEER_ADDR is required in local Bitcoin node mode' >&2
+  exit 1
+fi
+
+bitcoin_host=${BITCOIND_PEER_ADDR%:*}
+bitcoin_port=${BITCOIND_PEER_ADDR##*:}
+
+for _ in $(seq 1 30); do
+  if nc -z -w 2 "$bitcoin_host" "$bitcoin_port"; then
+    exit 0
+  fi
+  sleep 2
+done
+
+echo "Local Bitcoin node is not reachable at $BITCOIND_PEER_ADDR" >&2
+exit 1

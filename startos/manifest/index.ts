@@ -15,14 +15,13 @@ export const manifest = setupManifest({
     main: {
       source: { dockerBuild: {} },
       arch: ['x86_64'],
-      nvidiaContainer: true,
     },
   },
-  hardwareAcceleration: true,
   dependencies: {
     bitcoind: {
-      description: 'Bisq requires a Bitcoin full node for blockchain data',
-      optional: false,
+      description:
+        'Provides the private, trusted Bitcoin connection used by the default local-only mode',
+      optional: true,
       metadata: {
         title: 'Bitcoin',
         icon: 'https://raw.githubusercontent.com/Start9Labs/bitcoin-core-startos/feec0b1dae42961a257948fe39b40caf8672fce1/dep-icon.svg',
