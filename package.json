@@ -1,12 +1,13 @@
 {
   "name": "bisq-startos",
   "scripts": {
-    "build": "rm -rf ./javascript && ncc build startos/index.ts -o ./javascript",
+    "build": "rm -rf ./javascript && ncc build startos/index.ts -o ./javascript && chmod 755 ./javascript ./javascript/index.js",
     "prettier": "prettier --write startos",
     "check": "tsc --noEmit"
   },
   "dependencies": {
-    "@start9labs/start-sdk": "2.0.9"
+    "@start9labs/start-sdk": "2.0.9",
+    "bitcoin-core-startos": "github:Start9Labs/bitcoin-core-startos#next/28.x"
   },
   "devDependencies": {
     "@types/node": "^22.19.0",

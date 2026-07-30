@@ -1,7 +1,7 @@
 # Stage 1: Install Bisq in Ubuntu where the .deb works
 FROM ubuntu:jammy AS bisq-builder
 
-ARG BISQ_VERSION=1.10.3
+ARG BISQ_VERSION=1.10.4
 ARG BISQ_PGP_KEY=B493319106CC3D1F252E19CBF806F422E222AA02
 
 RUN apt-get update && \
@@ -20,8 +20,8 @@ RUN wget -qO /tmp/Bisq-64bit-${BISQ_VERSION}.deb \
     test -d /opt/bisq && \
     rm -f /tmp/Bisq-64bit-${BISQ_VERSION}.deb*
 
-# Stage 2: Webtop with bloat removed
-FROM ghcr.io/linuxserver/baseimage-kasmvnc:debianbookworm AS buildstage
+# Stage 2: Selkies webtop with bloat removed
+FROM ghcr.io/linuxserver/baseimage-selkies:debiantrixie@sha256:a5f7b38bb806c913bdabbe5667aa462d97d2c5ab3710498fe5aeee97c17287f8 AS buildstage
 
 # Install GTK3, X11 libraries for JavaFX, and wmctrl
 RUN apt-get update && \
@@ -43,13 +43,14 @@ RUN apt-get update && \
       libfreetype6 \
       libfontconfig1 \
       libasound2 \
+      fonts-dejavu-core \
+      x11-xserver-utils \
+      xcvt \
       wmctrl && \
     # Remove large unused packages from base image
     DEBIAN_FRONTEND=noninteractive \
     apt-get remove --purge --autoremove -y \
       containerd.io \
-      cpp \
-      cpp-12 \
       docker-ce \
       docker-ce-cli \
       docker-buildx-plugin \
@@ -69,14 +70,10 @@ RUN apt-get update && \
 COPY --from=bisq-builder /opt/bisq /opt/bisq
 RUN ln -s /opt/bisq/bin/Bisq /usr/local/bin/bisq
 
-# Branding, window config — maximize ALL windows, no decorations
+# Branding
 RUN echo "Bisq for StartOS is loading ..." > \
       /etc/s6-overlay/s6-rc.d/init-adduser/branding && \
-    sed -i '/run_branding() {/,/}/d' /docker-mods && \
-    sed -i 's|</applications>|  <application type="normal">\n    <maximized>yes</maximized>\n    <decor>no</decor>\n  </application>\n</applications>|' \
-      /etc/xdg/openbox/rc.xml && \
-    rm -f /etc/cont-init.d/99-deprecation 2>/dev/null || true && \
-    rm -f /kasmbins/kasm_webcam_server 2>/dev/null || true
+    sed -i '/^run_branding() {$/,/^}$/c\run_branding() { :; }' /docker-mods
 
 # Stage 3: Flatten into a single layer from scratch
 FROM scratch
@@ -93,17 +90,19 @@ ENV \
   S6_VERBOSITY=1 \
   S6_STAGE2_HOOK=/docker-mods \
   VIRTUAL_ENV=/lsiopy \
-  PATH="/lsiopy/bin:$PATH" \
+  PATH="/lsiopy/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin" \
   DISPLAY=:1 \
   PERL5LIB=/usr/local/bin \
   OMP_WAIT_POLICY=PASSIVE \
   GOMP_SPINCOUNT=0 \
   START_DOCKER=false \
   PULSE_RUNTIME_PATH=/defaults \
-  NVIDIA_DRIVER_CAPABILITIES=all
+  SELKIES_INTERPOSER=/usr/lib/selkies_joystick_interposer.so \
+  SELKIES_ENCODER="x264enc,jpeg" \
+  TITLE=Selkies
 
 # Add local files
-COPY root/ /
+COPY --chmod=755 root/ /
 
 EXPOSE 3000
 VOLUME /config

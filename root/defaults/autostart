@@ -1,1 +1,63 @@
-# empty - Bisq launched from startwm.sh
+#!/usr/bin/env bash
+
+set -eu
+
+export NO_AT_BRIDGE=1
+
+# Clean up stale lock files from previous crashes.
+rm -f /config/.local/share/Bisq/.lock 2>/dev/null || true
+rm -f /config/.local/share/Bisq/bisq.pid 2>/dev/null || true
+find /config/.local/share/Bisq -name '*.tmp' -delete 2>/dev/null || true
+find /config/.local/share/Bisq -name '*.lck' -delete 2>/dev/null || true
+
+# Regenerate the package-managed Bitcoin connection profile.
+bisq_props=/config/.local/share/Bisq/bisq.properties
+mkdir -p "$(dirname "$bisq_props")"
+
+case "${BITCOIN_CONNECTION_MODE:-local-only}" in
+  local-only)
+    if [ -z "${BITCOIND_PEER_ADDR:-}" ]; then
+      echo 'Local Bitcoin node mode requires BITCOIND_PEER_ADDR' >&2
+      exit 1
+    fi
+    use_tor_for_btc=false
+    bitcoin_nodes=$BITCOIND_PEER_ADDR
+    ;;
+  bisq-network)
+    if [ -z "${BISQ_NETWORK_FALLBACK_NODES:-}" ]; then
+      echo 'Bisq network fallback requires BISQ_NETWORK_FALLBACK_NODES' >&2
+      exit 1
+    fi
+    use_tor_for_btc=true
+    bitcoin_nodes=$BISQ_NETWORK_FALLBACK_NODES
+    ;;
+  *)
+    echo "Unsupported Bitcoin connection mode: $BITCOIN_CONNECTION_MODE" >&2
+    exit 1
+    ;;
+esac
+
+cat > "$bisq_props" <<PROPS
+useTorForBtc=$use_tor_for_btc
+btcNodes=$bitcoin_nodes
+bannedSeedNodes=
+bannedBtcNodes=
+bannedPriceRelayNodes=
+PROPS
+
+# Kill any leftover Bisq processes before launching it in this D-Bus session.
+pkill -f '/opt/bisq' 2>/dev/null || true
+sleep 1
+/opt/bisq/bin/Bisq &
+
+# Keep trying to maximize the Bisq window while JavaFX initializes.
+(
+  for _ in $(seq 1 60); do
+    sleep 2
+    wmctrl -l 2>/dev/null | grep -i 'bisq' | while read -r wid _rest; do
+      wmctrl -i -r "$wid" -b add,maximized_vert,maximized_horz
+      wmctrl -i -r "$wid" -b remove,above
+    done
+    wmctrl -r 'Bisq' -b add,maximized_vert,maximized_horz 2>/dev/null || true
+  done
+) &

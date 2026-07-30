@@ -10,7 +10,7 @@ Work this package's `TODO.md` from top to bottom. Keep `README.md` (architecture
 
 ## This repo
 
-- **Package id is `bisq`.** Bisq Desktop is a GUI application, served to the browser over a LinuxServer.io KasmVNC base image (`/init` s6 entrypoint). A single `primary` daemon runs it; the only interface is the `ui` web view (host `ui-multi`). Depends on `bitcoind` (Bitcoin full node) for blockchain data.
+- **Package id is `bisq`.** Bisq Desktop is a GUI application, served to the browser over a LinuxServer.io Selkies base image (`/init` s6 entrypoint). A single `primary` daemon runs it; the only interface is the `ui` web view (host `ui-multi`). Depends on `bitcoind` (Bitcoin full node) for blockchain data.
 
 ## Inspecting a running install
 
