@@ -17,6 +17,9 @@ export const manifest = setupManifest({
       arch: ['x86_64'],
     },
   },
+  hardwareRequirements: {
+    ram: 8192,
+  },
   dependencies: {
     bitcoind: {
       description:

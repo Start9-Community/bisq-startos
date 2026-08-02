@@ -76,6 +76,7 @@ export const main = sdk.setupMain(async ({ effects }) => {
           TITLE: 'Bisq',
           CUSTOM_USER: 'bisq',
           PASSWORD,
+          JAVA_TOOL_OPTIONS: '-Xmx4g',
           BITCOIN_CONNECTION_MODE: bitcoinConnectionMode,
           BISQ_NETWORK_FALLBACK_NODES: bisqNetworkFallbackNodes,
           ...(bitcoinPeerAddress && {
