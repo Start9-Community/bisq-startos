@@ -18,21 +18,15 @@ export const setDependencies = sdk.setupDependencies(async ({ effects }) => {
     return {}
   }
 
-  await sdk.action.createTask(
-    effects,
-    'bitcoind',
-    autoconfig,
-    'critical',
-    {
-      input: {
-        kind: 'partial',
-        accept: [{ peerbloomfilters: true }],
-        set: { peerbloomfilters: true },
-      },
-      when: { condition: 'input-not-matches', once: false },
-      reason: i18n('Enable bloom filters so Bisq can use your Bitcoin service'),
+  await sdk.action.createTask(effects, 'bitcoind', autoconfig, 'critical', {
+    input: {
+      kind: 'partial',
+      accept: [{ peerbloomfilters: true }],
+      set: { peerbloomfilters: true },
     },
-  )
+    when: { condition: 'input-not-matches', once: false },
+    reason: i18n('Enable bloom filters so Bisq can use your Bitcoin service'),
+  })
 
   return {
     bitcoind: {

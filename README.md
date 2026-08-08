@@ -38,6 +38,7 @@
 | Image source  | Custom multi-stage Dockerfile (Ubuntu Jammy builder + pinned LinuxServer Selkies Debian Trixie webtop, flattened via `FROM scratch`) |
 | Architectures | x86_64 only                                                                                                                          |
 | Entrypoint    | Upstream `/init` launched via SDK `useEntrypoint()` and `runAsInit: true` so the container gets PID 1 for s6-overlay                 |
+| Memory        | 8 GiB minimum system RAM; Bisq JVM heap capped at 4 GiB                                                                               |
 
 Bisq is a JavaFX desktop application with no web interface. This package runs it inside a browser-accessible Linux desktop (webtop) streamed by Selkies:
 
@@ -144,7 +145,8 @@ mode clears that task and removes the dependency warning.
 3. **`bisq.properties` is overwritten on every start** — manual edits to this file will not persist.
 4. **Local-only mode fails closed** — Bisq does not silently use remote Bitcoin peers when the local node is missing or unreachable.
 5. **Fallback mode uses remote peers over Tor** — select it explicitly with the Configure Bitcoin Connection action when a local Bitcoin node is not available.
-6. **First launch is slow** — Bisq needs to connect to the P2P trading network and sync, which can take several minutes.
+6. **8 GiB RAM minimum** — DAO state serialization can temporarily consume substantial heap; the package reserves up to 4 GiB for Bisq and requires enough system memory for the desktop and supporting processes.
+7. **First launch is slow** — Bisq needs to connect to the P2P trading network and sync, which can take several minutes.
 
 ## What Is Unchanged from Upstream
 
@@ -175,6 +177,7 @@ dependencies:
 startos_managed_env_vars:
   - CUSTOM_USER
   - PASSWORD
+  - JAVA_TOOL_OPTIONS
   - BITCOIN_CONNECTION_MODE
   - BITCOIND_PEER_ADDR
   - BISQ_NETWORK_FALLBACK_NODES
