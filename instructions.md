@@ -16,7 +16,7 @@ Bisq is a JavaFX desktop application. This package runs it inside a browser-acce
 
 ## Getting set up
 
-1. Make sure your StartOS server has at least 8 GiB of memory. Bisq needs this capacity to synchronize and monitor DAO state reliably.
+1. Make sure your StartOS server has at least 8 GB of memory. Bisq needs this capacity to synchronize and monitor DAO state reliably.
 2. Install **Bitcoin** first if you have not already. The default local-only mode requires it to be installed, running, and configured to serve Bloom filters. StartOS presents a critical task that applies this Bitcoin setting.
 3. If you cannot use a local Bitcoin node, run **Configure Bitcoin Connection** and select **Bisq network fallback**. This mode uses remote Bisq Bitcoin peers over Tor and does not require the Bitcoin service.
 4. After install, StartOS posts a critical task **Set your admin password**. Run it and copy the generated `bisq` username and password to a password manager — you'll need them to log into the desktop.
@@ -44,4 +44,4 @@ information.
 - **The Bisq network profile is regenerated on every start.** Manual edits to `bisq.properties` inside the container do not persist.
 - **Local-only mode fails closed.** If the local Bitcoin peer cannot be reached, Bisq fails to start instead of silently connecting to remote Bitcoin peers.
 - **Fallback mode is explicit.** It uses remote Bisq Bitcoin peers over Tor and should be selected only when you do not want to require the local Bitcoin service.
-- **8 GiB of system memory is required.** This leaves room for Bisq's 4 GiB Java heap and the browser desktop processes used to display it.
+- **8 GB of system memory is required.** This leaves room for Bisq's 4 GiB Java heap and the browser desktop processes used to display it.

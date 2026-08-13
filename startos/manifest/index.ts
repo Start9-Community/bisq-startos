@@ -18,7 +18,10 @@ export const manifest = setupManifest({
     },
   },
   hardwareRequirements: {
-    ram: 8 * 1024 ** 3,
+    // Means "an 8 GB machine or better". StartOS compares this against MemTotal,
+    // which is a few hundred MiB under the advertised capacity, so a literal
+    // 8 GiB rejects every 8 GB machine. 6 GiB sits between the 4 and 8 GB tiers.
+    ram: 6 * 1024 ** 3,
   },
   dependencies: {
     bitcoind: {
