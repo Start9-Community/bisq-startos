@@ -4,13 +4,15 @@
 
 # Bisq on StartOS
 
-> **Upstream docs:** <https://bisq.wiki/>
->
 > Everything not listed in this document should behave the same as upstream
 > Bisq. If a feature, setting, or behavior is not mentioned here, the upstream
-> documentation is accurate and fully applicable.
+> documentation is accurate and fully applicable — see the Documentation
+> section of `instructions.md` for links.
 
-[Bisq](https://bisq.network/) is a decentralized peer-to-peer Bitcoin exchange. Trade Bitcoin for fiat currencies and other cryptocurrencies without intermediaries, KYC, or centralized servers.
+[Bisq](https://github.com/bisq-network/bisq) is a decentralized peer-to-peer Bitcoin exchange — fiat and altcoin trades with no intermediary, no KYC, and no central server. It is a JavaFX **desktop** application, so this package runs it inside a browser-accessible Linux desktop rather than serving a web app, and wires its Bitcoin connection to the node on the same server.
+
+- **Upstream repo:** <https://github.com/bisq-network/bisq>
+- **Wrapper repo:** <https://github.com/Start9-Community/bisq-startos>
 
 ---
 
@@ -18,147 +20,180 @@
 
 - [Image and Container Runtime](#image-and-container-runtime)
 - [Volume and Data Layout](#volume-and-data-layout)
-- [Installation and First-Run Flow](#installation-and-first-run-flow)
-- [Configuration Management](#configuration-management)
-- [Network Access and Interfaces](#network-access-and-interfaces)
-- [Actions](#actions-startos-ui)
-- [Backups and Restore](#backups-and-restore)
-- [Health Checks](#health-checks)
+- [File Models](#file-models)
 - [Dependencies](#dependencies)
+- [Network Access and Interfaces](#network-access-and-interfaces)
+- [Installation and First-Run Flow](#installation-and-first-run-flow)
+- [Actions](#actions)
+- [Tasks](#tasks)
+- [Health Checks](#health-checks)
+- [Backups and Restore](#backups-and-restore)
 - [Limitations and Differences](#limitations-and-differences)
-- [What Is Unchanged from Upstream](#what-is-unchanged-from-upstream)
-- [Contributing](#contributing)
+- [Quick Reference for AI Consumers](#quick-reference-for-ai-consumers)
 
 ---
 
 ## Image and Container Runtime
 
-| Property      | Value                                                                                                                                |
-| ------------- | ------------------------------------------------------------------------------------------------------------------------------------ |
-| Image source  | Custom multi-stage Dockerfile (Ubuntu Jammy builder + pinned LinuxServer Selkies Debian Trixie webtop, flattened via `FROM scratch`) |
-| Architectures | x86_64 only                                                                                                                          |
-| Entrypoint    | Upstream `/init` launched via SDK `useEntrypoint()` and `runAsInit: true` so the container gets PID 1 for s6-overlay                 |
-| Memory        | 8 GB minimum system RAM; Bisq JVM heap capped at 4 GiB                                                                               |
+One image, built here in three stages: an Ubuntu builder that produces the Bisq tree, a digest-pinned LinuxServer Selkies webtop that supplies the desktop, and a `FROM scratch` flatten that collapses the result into a single layer.
 
-Bisq is a JavaFX desktop application with no web interface. This package runs it inside a browser-accessible Linux desktop (webtop) streamed by Selkies:
+| Property      | Value                                                                    |
+| ------------- | ------------------------------------------------------------------------ |
+| Image         | Built from this repo's `Dockerfile`                                      |
+| Architectures | x86_64 only                                                              |
+| Entrypoint    | The base image's `/init`, via `sdk.useEntrypoint()` + `runAsInit`        |
+| Memory        | Requires a machine of 8 GB or better; Bisq's JVM heap is capped at 4 GiB |
 
-```
-Browser -> Selkies (port 3000) -> Openbox -> Bisq (JavaFX)
-```
+| Subcontainer | Purpose                                                       |
+| ------------ | ------------------------------------------------------------- |
+| `bisq-sub`   | Both the startup oneshot and the desktop daemon — attach here |
 
-Selkies starts Openbox through its upstream D-Bus session wrapper. The
-package-owned `/defaults/autostart` hook launches Bisq inside that session and
-is copied over the persisted Openbox autostart file on every launch so upgrades
-cannot retain an obsolete KasmVNC/Selkies startup file.
+The stack is `browser → Selkies (port 3000) → Openbox → Bisq`. Selkies starts Openbox through its own D-Bus session wrapper, and a package-owned autostart hook launches Bisq inside that session. **`runAsInit: true` is required**, not stylistic: the base image is s6-overlay, which must be PID 1.
+
+The autostart hook is copied over the persisted Openbox autostart file on **every** launch, so an upgrade can never leave an obsolete startup script behind on a volume that predates it.
+
+**The desktop is deliberately locked down.** Passwordless sudo, terminal binaries, the remote command channel, external open helpers, and the unrelated applications sidebar are all disabled through the base image's environment. File upload and download are the one capability kept, because Bisq users need to move wallet and trade-history exports on and off the machine. Treat the webtop as a window onto Bisq, not as a general-purpose Linux desktop.
 
 ## Volume and Data Layout
 
-| Volume | Mount point | Contents                                         |
-| ------ | ----------- | ------------------------------------------------ |
-| `main` | `/config`   | Webtop home, Bisq application data, `store.json` |
+One volume, mounted as the desktop's home directory.
 
-- **`store.json`** — StartOS-managed file storing the desktop password and Bitcoin connection mode (username is hardcoded to `bisq`)
-- **`/config/.local/share/Bisq/`** — upstream Bisq data directory (wallet, trades, settings)
-- **`/config/.local/share/Bisq/bisq.properties`** — generated at launch by the Selkies autostart hook
+| Volume | Mount Point | Purpose                                              |
+| ------ | ----------- | ---------------------------------------------------- |
+| `main` | `/config`   | Webtop home, Bisq's data directory, and `store.json` |
 
-## Installation and First-Run Flow
+| Path                                | Holds                                                         |
+| ----------------------------------- | ------------------------------------------------------------- |
+| `store.json`                        | Package state: the desktop password and the Bitcoin mode      |
+| `.local/share/Bisq/`                | Upstream's data directory — wallet, trades, offers, DAO state |
+| `.local/share/Bisq/bisq.properties` | Generated on every launch; see [File Models](#file-models)    |
 
-1. On install, `store.json` is seeded empty (no password set) and the username `bisq` is hardcoded in the service.
-2. A **critical task** prompts the user to run the **Set Admin Password** action, which generates a random password and displays the credentials.
-3. The credentials are passed to Selkies via the `CUSTOM_USER` and `PASSWORD` environment variables.
+**Your wallet is in this volume.** There is nothing kept outside it, which makes the backup the whole of your recovery story for anything Bisq holds.
 
-Bisq launches directly into the desktop. Any upstream wallet/setup prompts run
-inside the Bisq UI after the desktop opens.
+## File Models
 
-## Configuration Management
+One model, plus one generated file that is deliberately **not** modelled.
 
-| StartOS-Managed                      | Upstream-Managed                             |
-| ------------------------------------ | -------------------------------------------- |
-| Admin username and password            | All other Bisq application settings via its own UI |
-| Bitcoin connection mode                | Wallet, trades, offers                            |
-| Selkies webtop settings (port, auth)   |                                                   |
-| `bisq.properties` (Tor/Bitcoin peers)  |                                                   |
+| File                                | Format | Modelled                | Written by                          |
+| ----------------------------------- | ------ | ----------------------- | ----------------------------------- |
+| `store.json`                        | JSON   | Yes — `FileHelper.json` | Init and both actions               |
+| `.local/share/Bisq/bisq.properties` | props  | No                      | The autostart hook, on every launch |
 
-The `bisq.properties` file is regenerated on every launch. The selected mode is:
+`store.json` holds exactly two things: `PASSWORD`, generated by [Set Admin Password](#actions) and passed to Selkies as the desktop credential, and `bitcoinConnectionMode`, one of `local-only` or `bisq-network`. The username is not stored — it is always `bisq`.
 
-- **Local node only (default):** `useTorForBtc=false` and
-  `btcNodes=<bridge address>` target Bitcoin's private, whitelisted
-  `peer-local` listener. A startup oneshot waits up to one minute for that
-  listener and fails startup if it remains unreachable.
-- **Bisq network fallback:** `useTorForBtc=true` and `btcNodes=<Bisq-provided
-  peers>` use the remote peer set bundled with the packaged Bisq release over
-  Tor. In this mode Bitcoin is not a required StartOS dependency.
+Both fields are read through `.const()`, so writing either re-runs `main` and the service picks the change up without a manual restart.
 
-`startos/main.ts` resolves the live bridge address from Bitcoin's `peer-local`
-binding only in local-only mode. The address and connection-mode setting are
-watched reactively: Bisq restarts when either changes, but not when Bitcoin
-receives a routine update.
+**`bisq.properties` is rewritten from scratch every time the desktop starts**, from the connection mode and the resolved Bitcoin address. A hand edit does not survive a restart — this is the file that decides whether Bisq talks to your node or to the network, and letting a stale copy win would silently change where your wallet gets its chain data. The same hook also clears Bisq's lock and PID files, so a crash does not leave the application refusing to start.
 
-Selkies keeps upload and download enabled so users can move Bisq wallet/history
-exports between machines. Passwordless sudo, terminal binaries, the remote
-command channel, external open helpers, and the unrelated Applications sidebar
-are disabled.
-
-## Network Access and Interfaces
-
-| Interface    | Port | Protocol | Purpose                                              |
-| ------------ | ---- | -------- | ---------------------------------------------------- |
-| Bisq Desktop | 3000 | HTTP     | Selkies web interface (full Bisq desktop in browser) |
-
-Access via LAN (.local), Tor (.onion), or any other address type configured in StartOS. StartOS terminates TLS, so the interface is always available over HTTPS to the user.
-
-## Actions (StartOS UI)
-
-| Action                           | Purpose                                                         | Availability | Inputs                  | Outputs                   |
-| -------------------------------- | --------------------------------------------------------------- | ------------ | ----------------------- | ------------------------- |
-| **Set Admin Password**           | Generate a new random password for the Selkies interface        | Any status   | None                    | Username and new password |
-| **Configure Bitcoin Connection** | Select local-only mode or the remote Bisq network fallback mode | Any status   | Bitcoin connection mode | None                      |
-
-On first install, **Set Admin Password** is triggered automatically as a
-critical task.
-
-## Backups and Restore
-
-- **Backed up:** The entire `main` volume (webtop config, Bisq data, wallet, trades, `store.json`)
-- **Restore behavior:** Standard volume restore. On restore, `seedFiles` re-runs but does not create a password task (only on fresh install).
-
-## Health Checks
-
-| Check        | Method              | Success message         | Error message               |
-| ------------ | ------------------- | ----------------------- | --------------------------- |
-| Bisq Desktop | Port 3000 listening | "Bisq desktop is ready" | "Bisq desktop is not ready" |
+Everything else — trading preferences, wallet settings, account details — belongs to Bisq's own UI and is untouched by the package.
 
 ## Dependencies
 
-| Dependency           | Required                       | Health check | Purpose                                              |
-| -------------------- | ------------------------------ | ------------ | ---------------------------------------------------- |
-| Bitcoin (`bitcoind`) | In local-only mode (default)   | `bitcoind`   | Private, trusted peer connection for blockchain data |
+Bitcoin, and **whether it is required depends on the connection mode**. This is the one thing about this package that is not visible from the manifest, which declares it optional.
 
-When local-only mode is selected, a recurring critical dependency task requires
-Bitcoin's `peerbloomfilters` setting to remain enabled. Switching to fallback
-mode clears that task and removes the dependency warning.
+| Mode                   | Bitcoin                                              |
+| ---------------------- | ---------------------------------------------------- |
+| `local-only` (default) | Required, `kind: 'running'`, health check `bitcoind` |
+| `bisq-network`         | Not a dependency at all                              |
+
+In local-only mode Bisq connects to Bitcoin's private, whitelisted peer listener over the internal bridge — a trusted connection to your own node, which is the point of running Bisq at home. That listener also requires Bitcoin to serve **bloom filters**, which is not on by default, so the package raises a task on Bitcoin's own page to turn it on (see [Tasks](#tasks)).
+
+In fallback mode Bisq uses the remote Bitcoin peers shipped with the Bisq release, over Tor. The peer list is supplied explicitly by the package rather than left to Bisq's defaults, so switching away from a previously configured local node takes effect reliably.
+
+Refer to the dependency as **Bitcoin**: either Bitcoin Core or Bitcoin Knots satisfies it.
+
+## Network Access and Interfaces
+
+One interface, and what it serves is a remote desktop rather than a web application.
+
+| Interface    | Id   | Type | Port | Description                                   |
+| ------------ | ---- | ---- | ---- | --------------------------------------------- |
+| Bisq Desktop | `ui` | ui   | 3000 | The Bisq application, streamed to the browser |
+
+Bound on the `ui-multi` MultiHost over HTTP and not masked.
+
+The interface is password-protected by Selkies itself, using the credential in `store.json` — so unlike most packages here, the service has its own login independent of StartOS. That login is what stands between anyone who can reach the address and your Bisq wallet.
+
+Bisq's own outbound Tor connections are made by Bisq, not by StartOS, and are unaffected by how this interface is reached.
+
+## Installation and First-Run Flow
+
+Install seeds an empty `store.json` and raises a `critical` task to set the desktop password. There is no default credential, so nothing can be reached until that task is done.
+
+Startup then runs in two steps. A oneshot checks that Bitcoin's peer listener is actually reachable — polling for roughly a minute in local-only mode, and doing nothing at all in fallback mode — and the desktop daemon only starts if it succeeds. **Local-only mode fails closed:** if your node cannot be reached, Bisq refuses to start rather than quietly falling back to strangers' Bitcoin peers.
+
+Once the desktop opens, Bisq's own first-run wizard runs inside it. The first connection to the P2P trading network takes several minutes and is not something the package can shorten.
+
+The recommended order is therefore: install and sync Bitcoin, accept the bloom-filter task, install Bisq, run Set Admin Password, then start.
+
+## Actions
+
+Two actions, both available at any status and neither grouped.
+
+### Set Admin Password
+
+Generates a new random password for the desktop login and shows it once. Run it when its task appears, and any time you need to rotate or recover the credential.
+
+- **What it changes:** `PASSWORD` in `store.json`, which becomes Selkies' password on the next start.
+- **Cost:** the write re-runs `main`, so the desktop restarts and any open browser session must log in again.
+- **Repeat safety:** idempotent in effect, but each run produces a **new** password and invalidates the old one.
+- **Outputs:** the username (always `bisq`) and the new password, shown once.
+
+### Configure Bitcoin Connection
+
+Chooses between your own node and the Bisq network's Bitcoin peers. Run it if you do not run Bitcoin on this server, or to move back to your node once you do.
+
+- **What it changes:** `bitcoinConnectionMode` in `store.json`. That single value drives three things at once: whether Bitcoin is a StartOS dependency, whether the bloom-filter task exists, and what `bisq.properties` is regenerated as.
+- **Cost:** the service restarts, and Bisq reconnects to a different Bitcoin source.
+- **Repeat safety:** idempotent; the last choice wins.
+- **What to know before switching to fallback:** you gain the ability to run without a local node, and you give up the trusted, private chain source. Bisq will be asking remote peers about your wallet's addresses, over Tor.
+
+## Tasks
+
+Two, and one of them appears on a **different service's** page.
+
+| Task                    | Severity   | Raised when                                            | Cleared when                         |
+| ----------------------- | ---------- | ------------------------------------------------------ | ------------------------------------ |
+| Set your admin password | `critical` | At install                                             | Set Admin Password runs              |
+| Enable bloom filters    | `critical` | While in local-only mode and Bitcoin lacks the setting | Bitcoin's config is changed to match |
+
+The first is raised on install only, so a restore does not re-prompt for a password that came back with the backup.
+
+The second is a **dependency task**: it is created against Bitcoin's `autoconfig` action, so the user sees it on **Bitcoin's** page with no indication there that Bisq asked for it. It is declared `once: false`, which means it comes back if the setting is ever turned off again — it is a standing requirement, not a one-time setup step. Switching to fallback mode clears it outright.
+
+`critical` blocks the service it belongs to from starting and suspends the ordinary controls.
+
+## Health Checks
+
+One check, on the desktop.
+
+| Check     | Displayed as   | Method                 | Grace Period |
+| --------- | -------------- | ---------------------- | ------------ |
+| `primary` | "Bisq Desktop" | Port 3000 is listening | default      |
+
+The check reports whether Selkies is serving, which is not the same as Bisq being usable: the desktop can be up while Bisq is still starting inside it, and the JavaFX window can take a while to appear. A green check with a blank desktop is a normal early state, not a fault.
+
+Nothing here reports on Bisq's connection to Bitcoin or to the P2P network. The Bitcoin connection is checked once, by the startup oneshot, and after that Bisq's own UI is the place to see it.
+
+## Backups and Restore
+
+The `main` volume is copied wholesale — `sdk.Backups.ofVolumes('main')`. That is the webtop home, Bisq's entire data directory, and `store.json`.
+
+**This backup contains your wallet.** Everything Bisq holds — keys, trade history, offers, and the DAO state — is in the volume, so a restore brings back a working, funded instance with the same desktop password.
+
+That also means the backup is sensitive in a way most packages' are not. Bisq's own seed-phrase backup remains the thing to keep independently: it is what recovers funds if the StartOS backup is lost, and it is much smaller.
+
+A restored instance does not re-raise the password task, since the password came back with it. The Bitcoin connection is re-resolved on the new box.
 
 ## Limitations and Differences
 
-1. **x86_64 only** — Bisq does not provide official ARM builds.
-2. **No direct desktop access** — Bisq runs inside a Selkies webtop, not as a native desktop app.
-3. **`bisq.properties` is overwritten on every start** — manual edits to this file will not persist.
-4. **Local-only mode fails closed** — Bisq does not silently use remote Bitcoin peers when the local node is missing or unreachable.
-5. **Fallback mode uses remote peers over Tor** — select it explicitly with the Configure Bitcoin Connection action when a local Bitcoin node is not available.
-6. **8 GB RAM minimum** — DAO state serialization can temporarily consume substantial heap; the package reserves up to 4 GiB for Bisq and requires enough system memory for the desktop and supporting processes.
-7. **First launch is slow** — Bisq needs to connect to the P2P trading network and sync, which can take several minutes.
-
-## What Is Unchanged from Upstream
-
-- All trading functionality (offers, trades, disputes)
-- Wallet management (send, receive, backup seed)
-- All Bisq UI settings and preferences
-- P2P network participation
-- DAO functionality
-
-## Contributing
-
-Build and development workflow follow the StartOS packaging guide: <https://docs.start9.com/packaging>. Keep `README.md`, `instructions.md`, and `AGENTS.md` in sync with any change to user-visible behavior or package structure.
+1. **x86_64 only.** Bisq ships no official ARM build.
+2. **It is a desktop application in a browser, not a web app.** Latency, clipboard behavior, and window management are Selkies' rather than Bisq's, and the experience differs from a native install.
+3. **`bisq.properties` is regenerated on every start.** Hand edits to the Bitcoin connection do not persist; use the action.
+4. **Local-only mode fails closed.** An unreachable local node stops the service instead of silently using remote peers.
+5. **The desktop is not a general-purpose one.** Terminals, sudo, and the applications sidebar are disabled; file transfer is not.
+6. **A machine of 8 GB or better is required.** Bisq's heap is capped at 4 GiB and DAO state can consume it, with the desktop stack on top.
+7. **First launch is slow** — joining the P2P trading network takes several minutes, every time on a fresh install.
 
 ---
 
@@ -166,14 +201,16 @@ Build and development workflow follow the StartOS packaging guide: <https://docs
 
 ```yaml
 package_id: bisq
-image: custom dockerBuild (multi-stage: ubuntu + pinned baseimage-selkies, flattened via FROM scratch)
-architectures: [x86_64]
+image: built from ./Dockerfile # ubuntu builder + linuxserver selkies webtop, flattened
+architectures:
+  - x86_64
+subcontainers:
+  - bisq-sub # the oneshot and the desktop daemon
 volumes:
   main: /config
-ports:
-  ui: 3000
-dependencies:
-  - bitcoind (local-only mode; running, health check: bitcoind)
+file_models:
+  - store.json
+  # .local/share/Bisq/bisq.properties is generated each launch, not modelled
 startos_managed_env_vars:
   - CUSTOM_USER
   - PASSWORD
@@ -195,7 +232,16 @@ startos_managed_env_vars:
   - SELKIES_UI_SIDEBAR_SHOW_APPS
   - SELKIES_UI_SIDEBAR_SHOW_FILES
   - SELKIES_FILE_TRANSFERS
+dependencies:
+  - bitcoind # required only in local-only mode; kind: running
+interfaces:
+  ui: { type: ui, port: 3000 }
 actions:
   - set-password
   - configure-bitcoin-connection
+tasks:
+  - { action: set-password, severity: critical }
+  - { action: bitcoind:autoconfig, severity: critical } # on Bitcoin's page, recurring
+health_checks:
+  - primary # displayed "Bisq Desktop"
 ```
