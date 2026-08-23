@@ -1,7 +1,7 @@
 # Stage 1: Install Bisq in Ubuntu where the .deb works
 FROM ubuntu:jammy AS bisq-builder
 
-ARG BISQ_VERSION=1.10.5
+ARG BISQ_VERSION=1.10.6
 ARG BISQ_PGP_KEY=B493319106CC3D1F252E19CBF806F422E222AA02
 
 RUN apt-get update && \
