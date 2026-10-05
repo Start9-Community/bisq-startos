@@ -10,7 +10,7 @@ export const manifest = setupManifest({
   marketingUrl: 'https://bisq.network/',
   donationUrl: 'https://bisq.network/contribute/',
   description: { short, long },
-  volumes: ['main'],
+  volumes: ['main', 'bisq'], // bisq: where 0.3.5.1 kept Bisq's data directory
   images: {
     main: {
       source: { dockerBuild: {} },
