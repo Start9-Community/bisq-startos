@@ -7,7 +7,7 @@ export const seedFiles = sdk.setupOnInit(async (effects, kind) => {
   await storeJson.merge(effects, {})
 
   if (kind === 'install') {
-    sdk.action.createOwnTask(effects, setPassword, 'critical', {
+    await sdk.action.createOwnTask(effects, setPassword, 'critical', {
       reason: i18n('Set your admin password'),
     })
   }

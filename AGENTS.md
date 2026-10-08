@@ -18,17 +18,24 @@ Freshly scaffolded? Work the
 guide page, not a file in this repo — read it, don't copy it in.
 
 Keep `README.md` (technical reference for an AI support or administering agent) and
-`instructions.md` (end-user docs) in sync with your changes.
+`instructions.md` (end-user docs) in sync with your changes. This file restates neither:
+whoever changes the package has both, so it carries only what they don't — repo mechanics,
+a change that looks right and is not, where the next thing gets added, a naming trap, a
+build or test invocation particular to this repo.
 
-**Bugs and feature requests are GitHub issues on this repo** — file them as you find them.
+**Fix a defect you spot rather than reporting it** — you have the package open and the
+context to be sure. File **a GitHub issue on this repo** only when the call isn't yours to
+make: you can't pin the cause down, two defensible fixes exist, or it's too large to ride on
+the work in hand. An open issue is a report, not a queue — implement one when you're asked
+to or when it's labelled `Approved`, then close it with `Closes #<n>`.
+
 Don't record work in the repo instead: no `TODO.md`, no `NOTES.md`, no `PLAN.md`. What you
 verified, tried, and decided belongs in the commit message and the PR body.
 
 ## This repo
 
-- **`runAsInit: true` is load-bearing.** The base image is s6-overlay and needs PID 1; drop it and nothing in the desktop comes up.
-- **`root/defaults/autostart` is the package's, and it overwrites the persisted copy on every launch.** That is what stops an upgraded install from keeping an obsolete startup script on a volume that predates it — don't make it conditional. It also regenerates `bisq.properties` and clears Bisq's stale `.lock`/`.pid` files, so both belong there rather than in `main.ts`.
-- **Don't relax the local-only failure path.** `check-bitcoin-node` gates the daemon and `main.ts` throws when the bridge address is absent; both exist so Bisq never silently reaches remote Bitcoin peers with the user's wallet addresses when they asked for their own node.
-- **The Selkies hardening env is a security boundary, not tidiness.** `DISABLE_SUDO`, `DISABLE_TERMINALS`, `SELKIES_COMMAND_ENABLED=false` and the sidebar flags keep the webtop from being a general shell on the box. `SELKIES_FILE_TRANSFERS` is deliberately the exception — wallet exports need it.
-- **Keep `bisq` in the manifest's `volumes`, though nothing mounts it.** A server still on 0.3.5.1 has its Bisq data directory there, and the `1.10.9:1` migration can read only a volume the manifest declares.
-- **`hardwareRequirements.ram` is 6 GiB to mean "8 GB or better".** StartOS compares it against `MemTotal`, which reads a few hundred MiB below the advertised capacity, so a literal 8 GiB rejects every 8 GB machine. Don't "correct" it.
+- **Keep `runAsInit: true`.** The base image is s6-overlay, which must be PID 1; without it nothing in the desktop comes up.
+- **Keep `root/defaults/autostart` unconditional.** It overwrites the persisted copy on every launch so an upgraded volume never keeps an obsolete startup script; generating `bisq.properties` and clearing Bisq's stale `.lock`/`.pid` files belong there, not in `main.ts`.
+- **Don't relax the local-only failure path** (`check-bitcoin-node` and the throw in `main.ts`): Bisq must never reach remote Bitcoin peers with the user's wallet addresses when they chose their own node.
+- **Don't loosen the Selkies hardening env** (`DISABLE_SUDO`, `DISABLE_TERMINALS`, `SELKIES_COMMAND_ENABLED=false`, the sidebar flags): it keeps the webtop from being a shell on the box. `SELKIES_FILE_TRANSFERS` stays on for wallet exports.
+- **Keep `bisq` in the manifest's `volumes`, though nothing mounts it.** The `1.10.9:1` migration reads a 0.3.5.1 install's data from it, and a migration can read only a declared volume.

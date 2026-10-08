@@ -93,12 +93,14 @@ Everything else — trading preferences, wallet settings, account details — be
 
 ## Dependencies
 
-Bitcoin, and **whether it is required depends on the connection mode**. This is the one thing about this package that is not visible from the manifest, which declares it optional.
+Bitcoin, and **whether it is required depends on the connection mode**. `startos/dependencies.ts` declares it optional, enabled while the mode is `local-only`.
 
 | Mode                   | Bitcoin                                              |
 | ---------------------- | ---------------------------------------------------- |
 | `local-only` (default) | Required, `kind: 'running'`, health check `bitcoind` |
 | `bisq-network`         | Not a dependency at all                              |
+
+The accepted versions are `28.4:29`, `29.4:16`, `30.3:16` or `31.1:16` and later within each major line, or Bitcoin Knots (pre-RDTS) `29.3:29` and later. Every accepted build has the bridge-only peer listener (`peer-local`, port 58334).
 
 In local-only mode Bisq connects to Bitcoin's private, whitelisted peer listener over the internal bridge — a trusted connection to your own node, which is the point of running Bisq at home. That listener also requires Bitcoin to serve **bloom filters**, which is not on by default, so the package raises a task on Bitcoin's own page to turn it on (see [Tasks](#tasks)).
 
@@ -115,6 +117,8 @@ One interface, and what it serves is a remote desktop rather than a web applicat
 | Bisq Desktop | `ui` | ui   | 3000 | The Bisq application, streamed to the browser |
 
 Bound on the `ui-multi` MultiHost over HTTP and not masked.
+
+The StartOS 0.3.5 package exposed a host named `main` (Tor 80→3000 and 3389→3389, LAN 443→3000 and 3389→3389). The `1.10.9:2` migration retires it, freeing its ports; its onion and any domain on it are not moved to `ui-multi`.
 
 The interface is password-protected by Selkies itself, using the credential in `store.json` — so unlike most packages here, the service has its own login independent of StartOS. That login is what stands between anyone who can reach the address and your Bisq wallet.
 
@@ -136,7 +140,7 @@ Two actions, both available at any status and neither grouped.
 
 ### Set Admin Password
 
-Generates a new random password for the desktop login and shows it once. Run it when its task appears, and any time you need to rotate or recover the credential.
+Generates a new random password for the desktop login and shows it once. Run it when its task appears, and any time you need to rotate or recover the credential. When a password already exists, it asks for confirmation first.
 
 - **What it changes:** `PASSWORD` in `store.json`, which becomes Selkies' password on the next start.
 - **Cost:** the write re-runs `main`, so the desktop restarts and any open browser session must log in again.
@@ -163,7 +167,7 @@ Two, and one of them appears on a **different service's** page.
 
 The first is raised on install only, so a restore does not re-prompt for a password that came back with the backup.
 
-The second is a **dependency task**: it is created against Bitcoin's `autoconfig` action, so the user sees it on **Bitcoin's** page with no indication there that Bisq asked for it. It is declared `once: false`, which means it comes back if the setting is ever turned off again — it is a standing requirement, not a one-time setup step. Switching to fallback mode clears it outright.
+The second is a **dependency task**: it is created against Bitcoin's `autoconfig` action, so the user sees it on **Bitcoin's** page with no indication there that Bisq asked for it. It is declared `once: false`, which means it comes back if the setting is ever turned off again — it is a standing requirement, not a one-time setup step. Switching to fallback mode hides it and stops it blocking anything; switching back brings it back.
 
 `critical` blocks the service it belongs to from starting and suspends the ordinary controls.
 

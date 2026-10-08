@@ -10,9 +10,13 @@ export const setPassword = sdk.Action.withoutInput(
     return {
       name: i18n('Set Admin Password'),
       description: i18n(
-        'Generate a new random password for the Bisq admin user desktop',
+        'Generate a new random password for signing in to the Bisq desktop',
       ),
-      warning: null,
+      warning: (await storeJson.read((s) => s.PASSWORD).const(effects))
+        ? i18n(
+            'Replaces the current Bisq desktop password. Bisq restarts, and the old password stops working.',
+          )
+        : null,
       allowedStatuses: 'any',
       group: null,
       visibility: 'enabled',

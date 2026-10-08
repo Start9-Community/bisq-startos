@@ -11,7 +11,7 @@ const inputSpec = InputSpec.of({
   bitcoinConnectionMode: Value.select({
     name: i18n('Bitcoin Connection Mode'),
     description: i18n(
-      'Local node only requires your StartOS Bitcoin service. Bisq network fallback uses remote Bisq Bitcoin peers over Tor.',
+      "- Local node only: Bisq connects only to the Bitcoin service on this server, and does not start while it is unreachable.\n- Bisq network fallback: Bisq uses remote Bitcoin peers provided by the Bisq network, over Tor. The Bitcoin service is not needed, but those peers are asked about your wallet's addresses.",
     ),
     default: defaultBitcoinConnectionMode,
     values: {
