@@ -70,7 +70,7 @@ Two volumes, of which only `main` is mounted.
 | `.local/share/Bisq/bisq.properties`     | Generated on every launch; see [File Models](#file-models)    |
 | `.local/share/Bisq-superseded-<stamp>/` | A data directory the 0.3.5.1 migration set aside              |
 
-**A Bisq carried over from StartOS 0.3.5.1** arrives with its data directory in `bisq`. The `1.10.9:1` migration copies it to `main/.local/share/Bisq/`, owned by the desktop user (`1000:1000`), then empties `bisq`. A data directory already at that path, which a Bisq started on an earlier 0.4.0 release created, is first renamed to `Bisq-superseded-<UTC timestamp>/` and never deleted. If the migration is interrupted, the next attempt finishes it; `.local/share/.bisq-0.3.5.1` and `.bisq-0.3.5.1.partial` are its staging copies.
+**A Bisq carried over from StartOS 0.3.5.1** arrives with its data directory in `bisq`. The `1.10.9:1` migration copies it to `main/.local/share/Bisq/`, owned by the desktop user (`1000:1000`), then empties `bisq`. A data directory already at that path, which a Bisq started on an earlier 0.4.0 release created, is first renamed to `Bisq-superseded-<UTC timestamp>/` and never deleted. If the migration is interrupted, the next attempt finishes it; `.local/share/.bisq-0.3.5.1` and `.bisq-0.3.5.1.partial` are its staging copies. The move runs once, on the update into `1.10.9:1`, so **a new, empty wallet on such an install, with data still in `bisq`, means Bisq is on a release before `1.10.9:1`, and updating runs the move.**
 
 **Your wallet is in `main`.** There is nothing kept outside it, which makes the backup the whole of your recovery story for anything Bisq holds.
 
@@ -185,7 +185,7 @@ Nothing here reports on Bisq's connection to Bitcoin or to the P2P network. The 
 
 ## Backups and Restore
 
-The `main` volume is copied wholesale — `sdk.Backups.ofVolumes('main')`. That is the webtop home, Bisq's entire data directory, and `store.json`. `bisq` is not backed up: it is empty once the 0.3.5.1 migration has run.
+The `main` volume is copied wholesale — `sdk.Backups.ofVolumes('main')`. That is the webtop home, Bisq's entire data directory, `store.json`, and any `Bisq-superseded-*` directory. `bisq` is not backed up: it is empty once the 0.3.5.1 migration has run.
 
 **This backup contains your wallet.** Everything Bisq holds — keys, trade history, offers, and the DAO state — is in `main`, so a restore brings back a working, funded instance with the same desktop password.
 
@@ -202,6 +202,7 @@ A restored instance does not re-raise the password task, since the password came
 5. **The desktop is not a general-purpose one.** Terminals, sudo, and the applications sidebar are disabled; file transfer is not.
 6. **A machine of 8 GB or better is required.** Bisq's heap is capped at 4 GiB and DAO state can consume it, with the desktop stack on top.
 7. **First launch is slow** — joining the P2P trading network takes several minutes, every time on a fresh install.
+8. **A `Bisq-superseded-*` directory is never reaped.** Nothing removes it and it is copied into every backup. It is a complete Bisq data directory, wallet included, so deleting it is the operator's call, once they are sure nothing in it is still needed.
 
 ---
 
