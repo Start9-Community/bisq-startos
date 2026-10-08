@@ -15,6 +15,7 @@ export const manifest = setupManifest({
     main: {
       source: { dockerBuild: {} },
       arch: ['x86_64'],
+      emulateMissing: false,
     },
   },
   hardwareRequirements: {
@@ -22,16 +23,5 @@ export const manifest = setupManifest({
     // which is a few hundred MiB under the advertised capacity, so a literal
     // 8 GiB rejects every 8 GB machine. 6 GiB sits between the 4 and 8 GB tiers.
     ram: 6 * 1024 ** 3,
-  },
-  dependencies: {
-    bitcoind: {
-      description:
-        'Provides the private, trusted Bitcoin connection used by the default local-only mode',
-      optional: true,
-      metadata: {
-        title: 'Bitcoin',
-        icon: 'https://raw.githubusercontent.com/Start9Labs/bitcoin-core-startos/feec0b1dae42961a257948fe39b40caf8672fce1/dep-icon.svg',
-      },
-    },
   },
 })

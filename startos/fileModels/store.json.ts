@@ -3,7 +3,7 @@ import { sdk } from '../sdk'
 
 export const defaultBitcoinConnectionMode = 'local-only'
 
-const shape = z.object({
+const shape = z.looseObject({
   PASSWORD: z.string().optional().catch(undefined),
   bitcoinConnectionMode: z
     .enum(['local-only', 'bisq-network'])

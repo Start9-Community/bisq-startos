@@ -12,7 +12,7 @@ const dict = {
 
   // actions/setPassword.ts
   'Set Admin Password': 5,
-  'Generate a new random password for the Bisq admin user desktop': 6,
+  'Generate a new random password for signing in to the Bisq desktop': 6,
 
   // init/seedFiles.ts
   'Set your admin password': 7,
@@ -22,10 +22,11 @@ const dict = {
   'Use these credentials to log into the Bisq desktop interface:': 9,
   Username: 10,
   Password: 11,
+  'Replaces the current Bisq desktop password. Bisq restarts, and the old password stops working.': 19,
 
   // actions/configureBitcoinConnection.ts
   'Bitcoin Connection Mode': 12,
-  'Local node only requires your StartOS Bitcoin service. Bisq network fallback uses remote Bisq Bitcoin peers over Tor.': 13,
+  "- Local node only: Bisq connects only to the Bitcoin service on this server, and does not start while it is unreachable.\n- Bisq network fallback: Bisq uses remote Bitcoin peers provided by the Bisq network, over Tor. The Bitcoin service is not needed, but those peers are asked about your wallet's addresses.": 13,
   'Local node only (recommended)': 14,
   'Bisq network fallback': 15,
   'Configure Bitcoin Connection': 16,

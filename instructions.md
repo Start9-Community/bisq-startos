@@ -31,7 +31,7 @@ The **Bisq Desktop** interface is the full Bisq application rendered in your bro
 
 ### Actions
 
-- **Set Admin Password** — generate a new random password for the Selkies login and display the credentials. Run this if you lose the password or want to rotate it.
+- **Set Admin Password** — generate a new random password for the Selkies login and display the credentials. Run this if you lose the password or want to rotate it. Once a password exists, it asks you to confirm before replacing it, and Bisq restarts.
 - **Configure Bitcoin Connection** — choose **Local node only** (the default and recommended mode) or **Bisq network fallback**. Changing this setting restarts Bisq.
 
 Selkies file upload/download can be used to transfer wallet and history exports.
