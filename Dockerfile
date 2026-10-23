@@ -21,7 +21,7 @@ RUN wget -qO /tmp/Bisq-64bit-${BISQ_VERSION}.deb \
     rm -f /tmp/Bisq-64bit-${BISQ_VERSION}.deb*
 
 # Stage 2: Selkies webtop with bloat removed
-FROM ghcr.io/linuxserver/baseimage-selkies:debiantrixie-3900c0f0-ls140@sha256:c3f25149cf58957fcc4259904b02cf88b1e51fc8df2f9946bc64650701e527e7 AS buildstage
+FROM ghcr.io/linuxserver/baseimage-selkies:debiantrixie-5b7527ee-ls143@sha256:fefbb88bff4cc8294ad42678b62f7c912da12e88dc4167101b161549fb4ad2d1 AS buildstage
 
 # Install GTK3, X11 libraries for JavaFX, and wmctrl
 RUN apt-get update && \
@@ -44,6 +44,7 @@ RUN apt-get update && \
       libfontconfig1 \
       libasound2 \
       fonts-dejavu-core \
+      python3-xdg \
       x11-xserver-utils \
       xcvt \
       wmctrl && \
@@ -103,7 +104,7 @@ ENV \
   SELKIES_ENABLE_BASIC_AUTH=false \
   SELKIES_VIDEO_STREAMING_MODE=false \
   SELKIES_ALLOWED_ORIGINS="*" \
-  SELKIES_RATE_CONTROL_MODE="crf,cbr" \
+  SELKIES_RATE_CONTROL_MODE="cbr,crf" \
   SHELL=/bin/bash \
   __GL_SYNC_TO_VBLANK=0 \
   TITLE=Selkies

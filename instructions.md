@@ -36,6 +36,8 @@ The **Bisq Desktop** interface is the full Bisq application rendered in your bro
 
 The Selkies sidebar offers streaming settings and file transfers. Available video codecs depend on your browser and server; JPEG is available as a fallback.
 
+New sessions use constant bitrate (CBR) with congestion control to adapt streaming to your connection. You can select constant quality (CRF) in the sidebar instead; saved streaming settings take precedence. Open the Bisq Desktop interface directly, as embedding it in another site's page is blocked.
+
 Selkies file upload/download can be used to transfer wallet and history exports.
 Keep exported wallet material secure because it may contain sensitive recovery
 information.
