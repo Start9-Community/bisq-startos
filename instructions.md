@@ -33,6 +33,7 @@ The **Bisq Desktop** interface is the full Bisq application rendered in your bro
 
 - **Set Admin Password** — generate a new random password for the Selkies login and display the credentials. Run this if you lose the password or want to rotate it. Once a password exists, it asks you to confirm before replacing it, and Bisq restarts.
 - **Configure Bitcoin Connection** — choose **Local node only** (the default and recommended mode) or **Bisq network fallback**. Changing this setting restarts Bisq.
+- **Configure Tor Sandbox** — keep Tor isolated from your wallet and keys (enabled by default), or disable isolation explicitly if it prevents Tor from starting or your bridges cannot work inside it. Changing this setting restarts Bisq. This does not change your Bitcoin connection mode.
 
 The Selkies sidebar offers streaming settings and file transfers. Available video codecs depend on your browser and server; JPEG is available as a fallback.
 
@@ -41,6 +42,18 @@ New sessions use constant bitrate (CBR) with congestion control to adapt streami
 Selkies file upload/download can be used to transfer wallet and history exports.
 Keep exported wallet material secure because it may contain sensitive recovery
 information.
+
+### Tor sandbox and connection problems
+
+Bisq normally runs Tor in a sandbox to keep a compromised Tor process away from your wallet and keys. A **Weaker Tor sandbox** popup means your server supports a reduced level of isolation; read the popup to see which protections are unavailable. It does not mean the sandbox is off.
+
+If Tor cannot start:
+
+1. Read Bisq's Tor error. If you use bridges with pluggable transports, enable **Allow pluggable transports in the Tor sandbox** in Bisq's Tor network settings. This is the English label shown by Bisq, including when another language is selected. The provided bridge choices are obfs4, snowflake, and meek.
+2. If Bisq reports that the sandbox cannot run, or your bridges require it to be off, open **Configure Tor Sandbox** in StartOS and turn off **Enable Tor Sandbox**. This removes Tor's isolation from your wallet and keys; use it only to recover from that compatibility problem.
+3. Re-enable the sandbox when the problem is resolved.
+
+Advanced troubleshooting: Bisq stores Tor state under `.local/share/Bisq/btc_mainnet/tor/data/` within the backed-up data volume. Its log reports `Tor runs in the level base of its sandbox` when the strongest Linux sandbox is active. The sandbox choice is saved by StartOS and survives restarts; editing `bisq.properties` is not a way to change it.
 
 ## Limitations
 

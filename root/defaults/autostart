@@ -48,7 +48,7 @@ PROPS
 # Kill any leftover Bisq processes before launching it in this D-Bus session.
 pkill -f '/opt/bisq' 2>/dev/null || true
 sleep 1
-/opt/bisq/bin/Bisq &
+/opt/bisq/bin/Bisq "--useTorSandbox=${BISQ_USE_TOR_SANDBOX:-true}" &
 
 # Keep trying to maximize the Bisq window while JavaFX initializes.
 (
