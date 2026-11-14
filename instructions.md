@@ -49,7 +49,7 @@ Bisq normally runs Tor in a sandbox to keep a compromised Tor process away from 
 
 If Tor cannot start:
 
-1. Read Bisq's Tor error. If you use bridges with pluggable transports, enable **Allow pluggable transports in the Tor sandbox** in Bisq's Tor network settings. This is the English label shown by Bisq, including when another language is selected. The provided bridge choices are obfs4, snowflake, and meek.
+1. Read Bisq's Tor error. If you use bridges with pluggable transports, enable **Allow pluggable transports in the Tor sandbox** in Bisq's Tor network settings. This choice survives service restarts. This is the English label shown by Bisq, including when another language is selected. The provided bridge choices are obfs4, snowflake, and meek.
 2. If Bisq reports that the sandbox cannot run, or your bridges require it to be off, open **Configure Tor Sandbox** in StartOS and turn off **Enable Tor Sandbox**. This removes Tor's isolation from your wallet and keys; use it only to recover from that compatibility problem.
 3. Re-enable the sandbox when the problem is resolved.
 
@@ -58,7 +58,7 @@ Advanced troubleshooting: Bisq stores Tor state under `.local/share/Bisq/btc_mai
 ## Limitations
 
 - **x86_64 only.** This package includes the upstream x86_64 Debian build.
-- **The Bisq network profile is regenerated on every start.** Manual edits to `bisq.properties` inside the container do not persist.
+- **The Bisq network profile is regenerated on every start.** Bitcoin connection changes must use **Configure Bitcoin Connection**. Bisq's bridge-transport permission is preserved; other manual edits to `bisq.properties` do not persist.
 - **Local-only mode fails closed.** If the local Bitcoin peer cannot be reached, Bisq fails to start instead of silently connecting to remote Bitcoin peers.
 - **Fallback mode is explicit.** It uses remote Bisq Bitcoin peers over Tor and should be selected only when you do not want to require the local Bitcoin service.
 - **8 GB of system memory is required.** This leaves room for Bisq's Java heap, 4 GiB on an 8 GB server, and the browser desktop processes used to display it.
