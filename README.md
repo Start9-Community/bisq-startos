@@ -92,7 +92,7 @@ One model, plus one generated file that is deliberately **not** modelled.
 
 All three fields are read through `.const()`, so writing any of them re-runs `main` and the service picks the change up without a manual restart.
 
-**`bisq.properties` is rewritten from scratch every time the desktop starts**, from the connection mode and the resolved Bitcoin address. A hand edit does not survive a restart — this is the file that decides whether Bisq talks to your node or to the network, and letting a stale copy win would silently change where your wallet gets its chain data. The same hook also clears Bisq's lock and PID files, so a crash does not leave the application refusing to start.
+**The Bitcoin connection fields in `bisq.properties` are regenerated every time the desktop starts**, from the connection mode and the resolved Bitcoin address. Bisq's `allowPluggableTransportsInTorSandbox` choice is preserved; other hand edits are discarded. The Bitcoin fields always follow the package's connection mode, so a stale file cannot silently change where the wallet gets its chain data. The same hook also clears Bisq's lock and PID files, so a crash does not leave the application refusing to start.
 
 Everything else — trading preferences, wallet settings, account details — belongs to Bisq's own UI and is untouched by the package.
 
