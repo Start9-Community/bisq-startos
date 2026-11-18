@@ -64,17 +64,20 @@ The autostart hook is copied over the persisted Openbox autostart file on **ever
 
 Two volumes, of which only `main` is mounted.
 
-| Volume | Mount Point | Purpose                                                                    |
-| ------ | ----------- | -------------------------------------------------------------------------- |
-| `main` | `/config`   | Webtop home, Bisq's data directory, and `store.json`                       |
-| `bisq` | not mounted | Legacy Bisq data directory; empty once it migrates |
+| Volume | Mount Point | Purpose                                              |
+| ------ | ----------- | ---------------------------------------------------- |
+| `main` | `/config`   | Webtop home, Bisq's data directory, and `store.json` |
+| `bisq` | not mounted | Legacy Bisq data directory; empty once it migrates   |
 
-| Path                                    | Holds                                                         |
-| --------------------------------------- | ------------------------------------------------------------- |
-| `store.json`                            | Package state: the desktop password and the Bitcoin mode      |
-| `.local/share/Bisq/`                    | Upstream's data directory — wallet, trades, offers, DAO state |
-| `.local/share/Bisq/bisq.properties`     | Generated on every launch; see [File Models](#file-models)    |
-| `.local/share/Bisq-superseded-<stamp>/` | A data directory the legacy migration set aside              |
+| Path                                       | Holds                                                         |
+| ------------------------------------------ | ------------------------------------------------------------- |
+| `store.json`                               | Package state: the desktop password and the Bitcoin mode      |
+| `.local/share/Bisq/`                       | Upstream's data directory — wallet, trades, offers, DAO state |
+| `.local/share/Bisq/bisq.properties`        | Generated on every launch; see [File Models](#file-models)    |
+| `.local/share/Bisq/btc_mainnet/tor/data/`  | Tor state                                                     |
+| `.local/share/Bisq/btc_mainnet/tor/bin/`   | Bundled Tor files                                             |
+| `.local/share/Bisq/btc_mainnet/tor/sandy/` | The Tor sandbox executable                                    |
+| `.local/share/Bisq-superseded-<stamp>/`    | A data directory the legacy migration set aside               |
 
 **A legacy Bisq install** arrives with its data directory in `bisq`. The upgrade migration copies it to `main/.local/share/Bisq/`, owned by the desktop user (`1000:1000`), then empties `bisq`. A data directory already at that path is first renamed to `Bisq-superseded-<UTC timestamp>/` and never deleted. If the migration is interrupted, the next attempt finishes it; `.local/share/.bisq-0.3.5.1` and `.bisq-0.3.5.1.partial` are its staging copies. The move runs once during upgrade. **A new, empty wallet with legacy data still in `bisq` indicates the transfer has not run; updating to a package with the migration runs it.**
 
@@ -96,10 +99,6 @@ All three fields are read through `.const()`, so writing any of them re-runs `ma
 **The Bitcoin connection fields in `bisq.properties` are regenerated every time the desktop starts**, from the connection mode and the resolved Bitcoin address. Bisq's `allowPluggableTransportsInTorSandbox` choice is preserved; other hand edits are discarded. The Bitcoin fields always follow the package's connection mode, so a stale file cannot silently change where the wallet gets its chain data. The same hook also clears Bisq's lock and PID files, so a crash does not leave the application refusing to start.
 
 Everything else — trading preferences, wallet settings, account details — belongs to Bisq's own UI and is untouched by the package.
-
-### Tor Sandbox
-
-Bundled Tor files live in `.local/share/Bisq/btc_mainnet/tor/bin/`, and the sandbox executable lives in `.local/share/Bisq/btc_mainnet/tor/sandy/`.
 
 ## Dependencies
 
@@ -174,6 +173,7 @@ Keeps Tor isolation enabled by default and provides the upstream recovery switch
 - **Cost:** changing the setting restarts the desktop and Bisq. Disabling isolation lets a compromised Tor process access wallet files and keys.
 - **Repeat safety:** idempotent; the current choice prefills the form and survives restarts and backups.
 - **Scope:** independent of the Bitcoin connection mode; local-only mode still requires the local Bitcoin service and fails closed.
+- **Sandbox strength:** the strongest Linux sandbox reports `Tor runs in the level base of its sandbox` in `.local/share/Bisq/bisq.log`. A **Weaker Tor sandbox** dialog identifies protections unavailable on the server.
 
 ## Tasks
 
