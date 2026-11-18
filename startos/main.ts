@@ -87,6 +87,7 @@ export const main = sdk.setupMain(async ({ effects }) => {
           TITLE: 'Bisq',
           CUSTOM_USER: 'bisq',
           PASSWORD,
+          // Mitigates CVE-2026-114938 in Bisq's bundled JVM.
           JAVA_TOOL_OPTIONS: `-Xmx${heapMiB}m -XX:-UseBASE64Intrinsics`,
           BISQ_USE_TOR_SANDBOX: String(useTorSandbox),
           BITCOIN_CONNECTION_MODE: bitcoinConnectionMode,
