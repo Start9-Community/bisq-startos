@@ -55,6 +55,8 @@ Selkies carries video, audio, input, clipboard, and file transfers over WebSocke
 
 The desktop uses Selkies 2.1.0 with pixelflux 2.2.1 and pcmflux 2.2.0. New sessions default to constant bitrate (CBR) with congestion control; constant quality (CRF) remains selectable in the sidebar. Saved client settings can override the default. The package's nginx header configuration enforces Selkies' same-origin framing policy on the static dashboard too, so open the Bisq Desktop interface directly instead of embedding it in another site's page. PyXDG is installed for Openbox's XDG autostart helper.
 
+The package must keep HotSpot’s Base64 intrinsic disabled with `-XX:-UseBASE64Intrinsics` in `JAVA_TOOL_OPTIONS`, alongside the managed heap limit, to mitigate CVE-2026-114938 (Java4Shell) on affected x86 CPUs. No Bisq-specific exploitability has been established. Wallet data and application configuration are unchanged.
+
 The autostart hook is copied over the persisted Openbox autostart file on **every** launch, so an upgrade can never leave an obsolete startup script behind on a volume that predates it.
 
 **The desktop is deliberately locked down.** Passwordless sudo, terminal binaries, the remote command channel, external open helpers, and the unrelated applications sidebar are all disabled through the base image's environment. File upload and download are the one capability kept, because Bisq users need to move wallet and trade-history exports on and off the machine. Treat the webtop as a window onto Bisq, not as a general-purpose Linux desktop.
@@ -279,3 +281,14 @@ tasks:
 health_checks:
   - primary # displayed "Bisq Desktop"
 ```
+
+## JVM mitigation regression check
+
+Run through `helix-build` after `npm install`:
+
+```sh
+docker build --target bisq-builder --load -t helix/bisq-jvm-security:1.10.11 .
+node --test tests/jvm-options.test.cjs
+```
+
+The test captures the production daemon environment at both heap limits and runs the upstream packaged native Bisq launcher with `--help` and `PrintFlagsFinal`. It checks the effective heap and disabled intrinsic without starting the desktop or changing wallet data. `BISQ_JVM_IMAGE` can select another image containing the same `/opt/bisq` bundle. The full s6/Selkies desktop path is outside this focused check.

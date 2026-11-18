@@ -14,6 +14,8 @@ Bisq is a JavaFX desktop application. This package runs it inside a browser-acce
 - Selkies upload and download support for moving Bisq wallet/history exports to or from another machine. Unrelated desktop applications are not exposed.
 - A Bisq memory limit of 4 GiB, rising to as much as 8 GiB on servers with more RAM, sized for DAO synchronization and monitoring.
 
+The package disables the JVM Base64 intrinsic to mitigate CVE-2026-114938 (Java4Shell) on affected x86 CPUs. No Bisq-specific exploitability has been established; wallet data and settings are unchanged.
+
 ## Getting set up
 
 1. Make sure your StartOS server has at least 8 GB of memory. Bisq needs this capacity to synchronize and monitor DAO state reliably.
